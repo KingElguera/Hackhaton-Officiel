@@ -1,0 +1,13 @@
+{
+  "nom": "Chambre 10 m² — étagère dans une niche + peinture",
+  "piece": "chambre de 10 m²",
+  "code_postal": "75011",
+  "budget_eur": 150,
+  "niveau": "débutant",
+  "niche": {"largeur_mm": 800, "profondeur_mm": 250, "marge_mm": 10},
+  "peinture": {"surface_m2": 30, "couches": 2, "couleur": "blanc", "rendement_par_defaut_m2_par_l": 10},
+  "enseignes": {
+    "castorama": "https://www.castorama.fr",
+    "ikea": "https://www.ikea.com/fr/fr/"
+  }
+}

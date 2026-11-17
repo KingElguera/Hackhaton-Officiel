@@ -1,0 +1,18 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+.env
+
+# macOS
+.DS_Store
+
+# Pages HTML de test autonomes (3D encodée dedans, regénérables depuis les .glb)
+test3d/*.html

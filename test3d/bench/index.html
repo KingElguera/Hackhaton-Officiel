@@ -1,0 +1,30 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Comparatif 3D</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<script type="module" src="https://unpkg.com/@google/model-viewer@3.5.0/dist/model-viewer.min.js"></script>
+<style>body{font-family:system-ui;margin:16px;background:#f6f5f2;color:#222}
+.g{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+figure{margin:0;background:#fff;border-radius:10px;padding:8px}model-viewer{width:100%;height:260px}
+figcaption{font-size:13px;line-height:1.4}table{border-collapse:collapse;margin-top:16px;background:#fff}
+td,th{border:1px solid #ddd;padding:6px 10px;font-size:14px}</style></head><body>
+<h2>Image → 3D : comparatif des modèles Hugging Face (Spaces gratuits)</h2>
+<p>Même photo produit (étagère IKEA KLAVRESTRÖM). Chaque objet est remis à l'échelle exacte de la fiche produit
+(600 × 170 × 200 mm) par notre code. <i>Écart forme</i> = écart moyen des proportions brutes du modèle par rapport à la fiche
+(0 % = parfait). Classement par écart de forme.</p>
+<div class="g"><figure><model-viewer src="web/hunyuan2.glb" camera-controls auto-rotate shadow-intensity="1"
+ camera-orbit="-30deg 70deg auto" loading="lazy"></model-viewer>
+<figcaption><b>Hunyuan3D-2 (Tencent)</b><br>12.4 s · texture : non · écart forme 3.9 %</figcaption></figure>
+<figure><model-viewer src="web/trellis2.glb" camera-controls auto-rotate shadow-intensity="1"
+ camera-orbit="-30deg 70deg auto" loading="lazy"></model-viewer>
+<figcaption><b>TRELLIS.2 (Microsoft)</b><br>37.3 s · texture : oui · écart forme 7.6 %</figcaption></figure>
+<figure><model-viewer src="web/trellis1.glb" camera-controls auto-rotate shadow-intensity="1"
+ camera-orbit="-30deg 70deg auto" loading="lazy"></model-viewer>
+<figcaption><b>TRELLIS v1 (Microsoft)</b><br>26.5 s · texture : oui · écart forme 8.5 %</figcaption></figure>
+<figure><model-viewer src="web/hunyuan21.glb" camera-controls auto-rotate shadow-intensity="1"
+ camera-orbit="-30deg 70deg auto" loading="lazy"></model-viewer>
+<figcaption><b>Hunyuan3D-2.1 (Tencent)</b><br>29.2 s · texture : non · écart forme 137.8 %</figcaption></figure></div>
+<table><tr><th>Modèle</th><th>Durée</th><th>Texture</th><th>Écart forme</th><th>Faces</th><th>Fichier</th></tr><tr><td>Hunyuan3D-2 (Tencent)</td><td>12.4 s</td><td>non</td><td>3.9 %</td><td>210 684</td><td>3.5 Mo</td></tr>
+<tr><td>TRELLIS.2 (Microsoft)</td><td>37.3 s</td><td>oui</td><td>7.6 %</td><td>98 754</td><td>2.3 Mo</td></tr>
+<tr><td>TRELLIS v1 (Microsoft)</td><td>26.5 s</td><td>oui</td><td>8.5 %</td><td>6 970</td><td>0.2 Mo</td></tr>
+<tr><td>Hunyuan3D-2.1 (Tencent)</td><td>29.2 s</td><td>non</td><td>137.8 %</td><td>322 200</td><td>6.4 Mo</td></tr></table>
+<h3>Échecs</h3><ul><li><b>TripoSG (VAST)</b> : AppError: RuntimeError</li><li><b>Unique3D</b> : AppError: You have exceeded your free ZeroGPU quota (600s requested vs. 0s left). Try again in 0:00:00. Subscribe to Hugging Face PRO to get 25 min of ZeroGPU quota a day - https://huggingface.co/subs</li></ul>
+</body></html>

@@ -1,0 +1,252 @@
+{
+ "cas": {
+  "nom": "Chambre 10 m² — étagère dans une niche + peinture",
+  "piece": "chambre de 10 m²",
+  "code_postal": "75011",
+  "budget_eur": 150,
+  "niveau": "débutant",
+  "niche": {
+   "largeur_mm": 800,
+   "profondeur_mm": 250,
+   "marge_mm": 10
+  },
+  "peinture": {
+   "surface_m2": 30,
+   "couches": 2,
+   "couleur": "blanc",
+   "rendement_par_defaut_m2_par_l": 10
+  },
+  "enseignes": {
+   "castorama": "https://www.castorama.fr",
+   "ikea": "https://www.ikea.com/fr/fr/"
+  }
+ },
+ "candidats": [
+  {
+   "besoin": "etagere",
+   "nom": "Tablette murale GoodHome Rigga effet chêne clair L. 80 cm",
+   "url": "https://www.castorama.fr/tablette-murale-goodhome-rigga-effet-chene-clair-l-80-cm/5059340671284_CAFR.prd",
+   "prix_eur": 9.99,
+   "largeur_mm": 800.0,
+   "profondeur_mm": 190.0,
+   "hauteur_mm": 18.0,
+   "volume_l": null,
+   "rendement_m2_par_l": null,
+   "magasin": "Castorama Nation",
+   "en_stock_magasin": true,
+   "stock_texte": "10 pièces",
+   "delai_livraison_texte": "Livré chez vous sous 4 jours ouvrés",
+   "delai_livraison_jours": 4,
+   "ajoute_au_panier": true,
+   "enseigne": "castorama",
+   "raisons": [
+    "trop large : 800 mm > 790 mm"
+   ],
+   "valide": false,
+   "quantite": 1,
+   "cout_eur": 9.99,
+   "dispo_jours": 0,
+   "dispo_mode": "retrait magasin (Castorama Nation)"
+  },
+  {
+   "besoin": "etagere",
+   "nom": "Tablette murale GoodHome Rigga effet noyer L. 80 cm",
+   "url": "https://www.castorama.fr/tablette-murale-goodhome-rigga-effet-noyer-l-80-cm/5059340669649_CAFR.prd",
+   "prix_eur": 10.9,
+   "largeur_mm": 800.0,
+   "profondeur_mm": 190.0,
+   "hauteur_mm": 18.0,
+   "volume_l": null,
+   "rendement_m2_par_l": null,
+   "magasin": "Castorama Nation",
+   "en_stock_magasin": false,
+   "stock_texte": "Non disponible (0 pièce)",
+   "delai_livraison_texte": "Livré chez vous sous 4 jours ouvrés",
+   "delai_livraison_jours": 4,
+   "ajoute_au_panier": false,
+   "enseigne": "castorama",
+   "raisons": [
+    "trop large : 800 mm > 790 mm"
+   ],
+   "valide": false,
+   "quantite": 1,
+   "cout_eur": 10.9,
+   "dispo_jours": 4,
+   "dispo_mode": "livraison"
+  },
+  {
+   "besoin": "peinture",
+   "nom": "Peinture murs et plafonds blanc pur mat Valspar pro 10 L",
+   "url": "https://www.castorama.fr/peinture-murs-et-plafonds-blanc-pur-mat-valspar-pro-10-l/5056402401438_CAFR.prd",
+   "prix_eur": 47.9,
+   "largeur_mm": null,
+   "profondeur_mm": null,
+   "hauteur_mm": null,
+   "volume_l": 10.0,
+   "rendement_m2_par_l": 10.0,
+   "magasin": "Castorama Nation",
+   "en_stock_magasin": true,
+   "stock_texte": "1 pièce",
+   "delai_livraison_texte": "Livré chez vous sous 4 jours ouvrés",
+   "delai_livraison_jours": 4,
+   "ajoute_au_panier": true,
+   "enseigne": "castorama",
+   "raisons": [
+    "6.0 L nécessaires → 1 pot(s) de 10 L"
+   ],
+   "valide": true,
+   "quantite": 1,
+   "cout_eur": 47.9,
+   "dispo_jours": 0,
+   "dispo_mode": "retrait magasin (Castorama Nation)"
+  },
+  {
+   "besoin": "peinture",
+   "nom": "Peinture murs et plafonds en phase aqueuse Dulux Valentine mat blanc 10L +20% gratuit",
+   "url": "https://www.castorama.fr/peinture-murs-et-plafonds-en-phase-aqueuse-dulux-valentine-mat-blanc-10l-20-gratuit/3031520195287_CAFR.prd",
+   "prix_eur": 52.11,
+   "largeur_mm": null,
+   "profondeur_mm": null,
+   "hauteur_mm": null,
+   "volume_l": 12.0,
+   "rendement_m2_par_l": 10.0,
+   "magasin": "Castorama Nation",
+   "en_stock_magasin": true,
+   "stock_texte": "5 pièces",
+   "delai_livraison_texte": "Livré chez vous sous 4 jours ouvrés",
+   "delai_livraison_jours": 4,
+   "ajoute_au_panier": false,
+   "enseigne": "castorama",
+   "raisons": [
+    "6.0 L nécessaires → 1 pot(s) de 12 L"
+   ],
+   "valide": true,
+   "quantite": 1,
+   "cout_eur": 52.11,
+   "dispo_jours": 0,
+   "dispo_mode": "retrait magasin (Castorama Nation)"
+  },
+  {
+   "besoin": "etagere",
+   "nom": "KLAVRESTRÖM Étagère murale, chêne, 60x20 cm",
+   "url": "https://www.ikea.com/fr/fr/p/klavrestroem-etagere-murale-chene-30601689/",
+   "prix_eur": 29.99,
+   "largeur_mm": 600.0,
+   "profondeur_mm": 170.0,
+   "hauteur_mm": 200.0,
+   "volume_l": null,
+   "rendement_m2_par_l": null,
+   "magasin": "Paris - Rivoli",
+   "en_stock_magasin": true,
+   "stock_texte": null,
+   "delai_livraison_texte": "24-27 novembre 2026",
+   "delai_livraison_jours": 7,
+   "ajoute_au_panier": true,
+   "enseigne": "ikea",
+   "raisons": [
+    "rentre dans la niche (600×170 mm ≤ 790×240 mm)",
+    "stock magasin annoncé par l'agent sans texte affiché : non retenu"
+   ],
+   "valide": true,
+   "quantite": 1,
+   "cout_eur": 29.99,
+   "dispo_jours": 7,
+   "dispo_mode": "livraison"
+  },
+  {
+   "besoin": "etagere",
+   "nom": "MOSSLANDA Tablette pour photos, blanc, 55 cm",
+   "url": "https://www.ikea.com/fr/fr/p/mosslanda-tablette-pour-photos-blanc-40291766/",
+   "prix_eur": 5.99,
+   "largeur_mm": 550.0,
+   "profondeur_mm": 120.0,
+   "hauteur_mm": null,
+   "volume_l": null,
+   "rendement_m2_par_l": null,
+   "magasin": "Paris - Rivoli",
+   "en_stock_magasin": null,
+   "stock_texte": null,
+   "delai_livraison_texte": null,
+   "delai_livraison_jours": null,
+   "ajoute_au_panier": false,
+   "enseigne": "ikea",
+   "raisons": [
+    "rentre dans la niche (550×120 mm ≤ 790×240 mm)"
+   ],
+   "valide": true,
+   "quantite": 1,
+   "cout_eur": 5.99,
+   "dispo_jours": null,
+   "dispo_mode": "disponibilité inconnue"
+  }
+ ],
+ "choix": {
+  "etagere": {
+   "besoin": "etagere",
+   "nom": "KLAVRESTRÖM Étagère murale, chêne, 60x20 cm",
+   "url": "https://www.ikea.com/fr/fr/p/klavrestroem-etagere-murale-chene-30601689/",
+   "prix_eur": 29.99,
+   "largeur_mm": 600.0,
+   "profondeur_mm": 170.0,
+   "hauteur_mm": 200.0,
+   "volume_l": null,
+   "rendement_m2_par_l": null,
+   "magasin": "Paris - Rivoli",
+   "en_stock_magasin": true,
+   "stock_texte": null,
+   "delai_livraison_texte": "24-27 novembre 2026",
+   "delai_livraison_jours": 7,
+   "ajoute_au_panier": true,
+   "enseigne": "ikea",
+   "raisons": [
+    "rentre dans la niche (600×170 mm ≤ 790×240 mm)",
+    "stock magasin annoncé par l'agent sans texte affiché : non retenu"
+   ],
+   "valide": true,
+   "quantite": 1,
+   "cout_eur": 29.99,
+   "dispo_jours": 7,
+   "dispo_mode": "livraison"
+  },
+  "peinture": {
+   "besoin": "peinture",
+   "nom": "Peinture murs et plafonds blanc pur mat Valspar pro 10 L",
+   "url": "https://www.castorama.fr/peinture-murs-et-plafonds-blanc-pur-mat-valspar-pro-10-l/5056402401438_CAFR.prd",
+   "prix_eur": 47.9,
+   "largeur_mm": null,
+   "profondeur_mm": null,
+   "hauteur_mm": null,
+   "volume_l": 10.0,
+   "rendement_m2_par_l": 10.0,
+   "magasin": "Castorama Nation",
+   "en_stock_magasin": true,
+   "stock_texte": "1 pièce",
+   "delai_livraison_texte": "Livré chez vous sous 4 jours ouvrés",
+   "delai_livraison_jours": 4,
+   "ajoute_au_panier": true,
+   "enseigne": "castorama",
+   "raisons": [
+    "6.0 L nécessaires → 1 pot(s) de 10 L"
+   ],
+   "valide": true,
+   "quantite": 1,
+   "cout_eur": 47.9,
+   "dispo_jours": 0,
+   "dispo_mode": "retrait magasin (Castorama Nation)"
+  }
+ },
+ "taches": [
+  {
+   "tache": "Préparer les murs et peindre (2 couches + séchage)",
+   "debut": "2026-11-17",
+   "duree_j": 3,
+   "attend": "peinture (retrait magasin (Castorama Nation))"
+  },
+  {
+   "tache": "Poser l'étagère dans la niche (perçage + chevilles)",
+   "debut": "2026-11-24",
+   "duree_j": 1,
+   "attend": "étagère (livraison) et fin de la peinture"
+  }
+ ]
+}

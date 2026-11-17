@@ -1,0 +1,40 @@
+{
+  "hunyuan21": {
+    "nom": "Hunyuan3D-2.1 (Tencent)",
+    "ts": "2026-11-17T17:00:39.298617+00:00",
+    "tache": "3d-bench",
+    "modele": "hunyuan21",
+    "succes": true,
+    "sortie": "forme seule (texture en panne)",
+    "fichier": "hunyuan21.glb",
+    "duree_s": 29.2
+  },
+  "tripo": {
+    "nom": "TripoSG (VAST)",
+    "ts": "2026-11-17T17:01:08.517734+00:00",
+    "tache": "3d-bench",
+    "modele": "tripo",
+    "succes": false,
+    "erreur": "AppError: RuntimeError",
+    "duree_s": 9.1
+  },
+  "trellis1": {
+    "nom": "TRELLIS v1 (Microsoft)",
+    "ts": "2026-11-17T17:01:17.604533+00:00",
+    "tache": "3d-bench",
+    "modele": "trellis1",
+    "succes": true,
+    "sortie": "forme + texture",
+    "fichier": "trellis1.glb",
+    "duree_s": 26.5
+  },
+  "unique3d": {
+    "nom": "Unique3D",
+    "ts": "2026-11-17T17:01:44.146178+00:00",
+    "tache": "3d-bench",
+    "modele": "unique3d",
+    "succes": false,
+    "erreur": "AppError: You have exceeded your free ZeroGPU quota (600s requested vs. 0s left). Try again in 0:00:00. Subscribe to Hugging Face PRO to get 25 min of ZeroGPU quota a day - https://huggingface.co/subscribe/pro?from=ZeroGPU",
+    "duree_s": 2.4
+  }
+}

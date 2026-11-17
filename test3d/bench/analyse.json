@@ -1,0 +1,58 @@
+{
+  "ok": [
+    {
+      "cle": "hunyuan2",
+      "nom": "Hunyuan3D-2 (Tencent)",
+      "duree_s": 12.4,
+      "sortie": "forme seule (texture en panne)",
+      "texture": "non",
+      "faces": 210684,
+      "taille_mo": 3.5,
+      "prop_brutes": "0.286 / 0.356",
+      "ecart_pct": 3.9
+    },
+    {
+      "cle": "trellis2",
+      "nom": "TRELLIS.2 (Microsoft)",
+      "duree_s": 37.3,
+      "sortie": "forme + texture",
+      "texture": "oui",
+      "faces": 98754,
+      "taille_mo": 2.3,
+      "prop_brutes": "0.315 / 0.347",
+      "ecart_pct": 7.6
+    },
+    {
+      "cle": "trellis1",
+      "nom": "TRELLIS v1 (Microsoft)",
+      "duree_s": 26.5,
+      "sortie": "forme + texture",
+      "texture": "oui",
+      "faces": 6970,
+      "taille_mo": 0.2,
+      "prop_brutes": "0.299 / 0.371",
+      "ecart_pct": 8.5
+    },
+    {
+      "cle": "hunyuan21",
+      "nom": "Hunyuan3D-2.1 (Tencent)",
+      "duree_s": 29.2,
+      "sortie": "forme seule (texture en panne)",
+      "texture": "non",
+      "faces": 322200,
+      "taille_mo": 6.4,
+      "prop_brutes": "1.000 / 0.257",
+      "ecart_pct": 137.8
+    }
+  ],
+  "echecs": [
+    [
+      "TripoSG (VAST)",
+      "AppError: RuntimeError"
+    ],
+    [
+      "Unique3D",
+      "AppError: You have exceeded your free ZeroGPU quota (600s requested vs. 0s left). Try again in 0:00:00. Subscribe to Hugging Face PRO to get 25 min of ZeroGPU quota a day - https://huggingface.co/subs"
+    ]
+  ]
+}

@@ -40,13 +40,14 @@ create table if not exists public.projets (
   besoins         jsonb,
   hors_perimetre  jsonb,
   statut          text not null default 'brouillon'
-                  check (statut in ('brouillon','valide','en_recherche','termine','erreur')),
+                  check (statut in ('brouillon','questions','valide','en_recherche','termine','envoye','erreur')),
   resultat        jsonb,                        -- achats, planning, guide
   total_eur       numeric,
   fin_travaux     date
 );
 alter table public.projets add column if not exists nom text;            -- nom du chantier
 alter table public.projets add column if not exists email_artisan text;  -- destinataire du mail de fin (n8n)
+alter table public.projets add column if not exists prenom_artisan text; -- « Bonjour {prénom} » dans le mail n8n
 
 -- ------------------------------------------------------------------ executions (1 ligne = 1 session d'agent H)
 create table if not exists public.executions (

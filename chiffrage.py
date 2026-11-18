@@ -121,7 +121,8 @@ def main():
                 base.inserer("fournisseurs", [{"id": f, "nom": f.capitalize(), "url": chantier.fournisseurs[f]} for f in fours],
                              conflit="id", ignorer_doublons=True)
                 skill = base.skill_id("releve_prix")
-                projet_id = base.inserer("projets", {"texte": f"Chiffrage — {chantier.nom}", "code_postal": chantier.code_postal,
+                projet_id = base.inserer("projets", {"nom": chantier.nom, "email_artisan": chantier.email_artisan,
+                                                     "texte": f"Chiffrage — {chantier.nom}", "code_postal": chantier.code_postal,
                                                      "besoins": [p.model_dump() for p in chantier.produits],
                                                      "statut": "en_recherche"})[0]["id"]
                 print(f"Chantier enregistré dans Supabase : {projet_id}")

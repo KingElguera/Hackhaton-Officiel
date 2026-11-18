@@ -45,6 +45,8 @@ create table if not exists public.projets (
   total_eur       numeric,
   fin_travaux     date
 );
+alter table public.projets add column if not exists nom text;            -- nom du chantier
+alter table public.projets add column if not exists email_artisan text;  -- destinataire du mail de fin (n8n)
 
 -- ------------------------------------------------------------------ executions (1 ligne = 1 session d'agent H)
 create table if not exists public.executions (

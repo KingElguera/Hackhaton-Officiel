@@ -25,6 +25,7 @@ class ProduitDemande(BaseModel):
 class Chantier(BaseModel):
     nom: str
     code_postal: str
+    email_artisan: Optional[str] = Field(None, description="destinataire du mail « Marcel a fini » (envoyé par n8n)")
     produits: List[ProduitDemande]
     fournisseurs: dict = Field(description="{'castorama': 'https://www.castorama.fr', …}")
 

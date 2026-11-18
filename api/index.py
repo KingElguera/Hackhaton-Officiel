@@ -207,6 +207,18 @@ def _maj(cid: str, valeurs: dict) -> dict:
     return base.modifier("projets", {"id": cid}, valeurs)[0]
 
 
+@app.get("/api/chantiers")
+def lister_chantiers():
+    if not base.actif():
+        raise HTTPException(503, "Supabase n'est pas configuré sur le back")
+    with base._client() as c:
+        r = c.get("/projets", params={"select": "id,nom,created_at,statut,fiche", "fiche": "not.is.null",
+                                      "order": "created_at.desc", "limit": 50})
+        r.raise_for_status()
+    return [{"id": p["id"], "nom": p.get("nom") or "Chantier", "piece": (p.get("fiche") or {}).get("piece"),
+             "cree_le": p["created_at"], "etat": ch.ETAT_FRONT.get(p.get("statut"), "brouillon")} for p in r.json()]
+
+
 @app.post("/api/chantiers")
 def creer_chantier(d: DemandeChantier):
     f = dict(d.fiche)

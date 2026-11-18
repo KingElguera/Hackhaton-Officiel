@@ -15,6 +15,11 @@ from typing import List, Optional
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+# Les clés collées dans Vercel peuvent garder un retour à la ligne invisible : on les nettoie une fois pour toutes.
+for _cle in ("HAI_API_KEY", "HF_TOKEN", "SUPABASE_URL", "SUPABASE_SERVICE_KEY", "HF_BILL_TO", "HF_MODELE"):
+    if os.environ.get(_cle) is not None:
+        os.environ[_cle] = os.environ[_cle].strip()
+
 from fastapi import FastAPI, HTTPException, Query  # noqa: E402
 from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 from pydantic import BaseModel, Field  # noqa: E402
@@ -67,7 +72,16 @@ def _erreur(e: Exception, quoi: str):
 
 @app.get("/api/sante")
 def sante():
-    return {"ok": True, "h_company": bool(os.environ.get("HAI_API_KEY")), "hugging_face": bool(os.environ.get("HF_TOKEN"))}
+    from marcel_core import base as _base
+    supa = "absente"
+    if _base.actif():
+        try:
+            _base.lire("fournisseurs")
+            supa = "ok"
+        except Exception as e:
+            supa = f"erreur : {type(e).__name__}"[:80]
+    return {"ok": True, "h_company": bool(os.environ.get("HAI_API_KEY")), "hugging_face": bool(os.environ.get("HF_TOKEN")),
+            "supabase": supa}
 
 
 @app.post("/api/comprendre")

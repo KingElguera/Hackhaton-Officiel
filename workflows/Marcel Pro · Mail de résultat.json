@@ -1,0 +1,317 @@
+{
+  "name": "Marcel Pro · Mail de résultat",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "chantier-termine",
+        "authentication": "headerAuth",
+        "options": {}
+      },
+      "id": "ef1ce1dd-ecd8-46b7-b94b-eb808086b8b5",
+      "name": "Recevoir le changement de Supabase",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        304
+      ],
+      "webhookId": "ae0e7533-16f5-431d-a557-588cdb013974",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "BXoLIBIdZQfv2TDp",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// À remplacer par l'adresse du site de Jade\nconst URL_SITE = 'https://A-REMPLACER.vercel.app';\nconst b = $json.body ?? $json;\nconst rec = b.record ?? {};\nconst old = b.old_record ?? {};\nconst vientDeTerminer = b.type === 'UPDATE' && rec.statut === 'termine' && old.statut !== 'termine';\nlet etape = 'ignorer';\nlet erreur = null;\nif (vientDeTerminer) {\n  if (rec.email_artisan) {\n    etape = 'envoyer';\n  } else {\n    etape = 'sans_email';\n    erreur = \"email_artisan manquant dans la table projets\";\n  }\n}\nconst h = '0123456789abcdef';\nlet u = '';\nfor (let i = 0; i < 36; i++) {\n  if ([8, 13, 18, 23].includes(i)) { u += '-'; continue; }\n  if (i === 14) { u += '4'; continue; }\n  let r = Math.floor(Math.random() * 16);\n  if (i === 19) r = (r & 0x3) | 0x8;\n  u += h[r];\n}\nconst nom = rec.nom || rec.nom_chantier || null;\nreturn {\n  json: {\n    etape,\n    erreur,\n    debut_ms: Date.now(),\n    passage_id: u,\n    projet_id: rec.id ?? null,\n    email: rec.email_artisan ?? null,\n    prenom: rec.prenom_artisan || '',\n    nom_chantier: nom,\n    lien: URL_SITE + '/chantiers/' + (rec.id ?? '')\n  }\n};\n"
+      },
+      "id": "835875f1-8d6d-40e9-9056-e78e919fc9ff",
+      "name": "Lire le changement",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.etape }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "envoyer"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Envoyer le mail"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.etape }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "sans_email"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "E-mail manquant"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "263a8a43-7982-47ee-9947-275d7afdca3b",
+      "name": "Que faire ?",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        480,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.email }}",
+        "subject": "={{ $json.nom_chantier ? \"Ton chantier \" + $json.nom_chantier + \" est prêt\" : \"Ton chantier est prêt\" }}",
+        "emailType": "text",
+        "message": "=Bonjour {{ $json.prenom }},\n\nMarcel a terminé {{ $json.nom_chantier ? \"le chantier \" + $json.nom_chantier : \"ton chantier\" }}.\nTu y trouveras la liste des meilleurs prix, les paniers, le devis à relire et le visuel de la pièce.\n\nOuvrir mon chantier : {{ $json.lien }}\n\nRelis le devis avant de l'envoyer à ton client : c'est toi qui t'engages sur le prix.\n\nMarcel",
+        "options": {
+          "appendAttribution": false,
+          "senderName": "Marcel"
+        }
+      },
+      "id": "8800061d-e869-4d45-96ea-ec49c02eed0f",
+      "name": "Envoyer le mail à l'artisan",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        736,
+        208
+      ],
+      "webhookId": "07961670-8f3d-4ffe-ac6a-ace10005a5be",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "tableId": "journal_n8n",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "passage_id",
+              "fieldValue": "={{ $('Lire le changement').item.json.passage_id }}"
+            },
+            {
+              "fieldId": "projet_id",
+              "fieldValue": "={{ $('Lire le changement').item.json.projet_id }}"
+            },
+            {
+              "fieldId": "station",
+              "fieldValue": "mail"
+            },
+            {
+              "fieldId": "nom_station",
+              "fieldValue": "Mail de résultat"
+            },
+            {
+              "fieldId": "statut",
+              "fieldValue": "succes"
+            },
+            {
+              "fieldId": "duree_ms",
+              "fieldValue": "={{ Date.now() - $('Lire le changement').item.json.debut_ms }}"
+            }
+          ]
+        }
+      },
+      "id": "e822f735-164b-4eb4-a103-0bcaceb35ae7",
+      "name": "Noter le mail envoyé",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1008,
+        128
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "fhXBAEBxdJHahbuu",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "journal_n8n",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "passage_id",
+              "fieldValue": "={{ $('Lire le changement').item.json.passage_id }}"
+            },
+            {
+              "fieldId": "projet_id",
+              "fieldValue": "={{ $('Lire le changement').item.json.projet_id }}"
+            },
+            {
+              "fieldId": "station",
+              "fieldValue": "mail"
+            },
+            {
+              "fieldId": "nom_station",
+              "fieldValue": "Mail de résultat"
+            },
+            {
+              "fieldId": "statut",
+              "fieldValue": "echec"
+            },
+            {
+              "fieldId": "duree_ms",
+              "fieldValue": "={{ Date.now() - $('Lire le changement').item.json.debut_ms }}"
+            },
+            {
+              "fieldId": "erreur",
+              "fieldValue": "={{ $json.error?.message ?? $json.erreur ?? 'erreur inconnue' }}"
+            }
+          ]
+        }
+      },
+      "id": "9082dafc-060d-4309-ac13-75b015719031",
+      "name": "Noter l'échec",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1008,
+        400
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "fhXBAEBxdJHahbuu",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Marcel Pro · Mail de résultat\n**Qui appelle :** Supabase (Database Webhook sur la table `projets`, événement Update), avec un en-tête secret.\n**Fait :** si le projet vient de passer à `termine`, envoie UN mail à l'artisan, puis écrit une ligne dans `journal_n8n`.\n**À régler avant d'activer :** 1) le secret (Credential « Marcel · secret webhook Supabase »), 2) le compte Gmail, 3) l'adresse du site dans « Lire le changement ».\n**Attend de King :** colonnes `email_artisan` et `prenom_artisan` dans `projets`.",
+        "height": 260,
+        "width": 560,
+        "color": 4
+      },
+      "id": "5fcd9880-9dfe-4b43-854c-3da79556c7b9",
+      "name": "Sticky Note 9f857e18",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -32,
+        -64
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Recevoir le changement de Supabase": {
+      "main": [
+        [
+          {
+            "node": "Lire le changement",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lire le changement": {
+      "main": [
+        [
+          {
+            "node": "Que faire ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Que faire ?": {
+      "main": [
+        [
+          {
+            "node": "Envoyer le mail à l'artisan",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Noter l'échec",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Envoyer le mail à l'artisan": {
+      "main": [
+        [
+          {
+            "node": "Noter le mail envoyé",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Noter l'échec",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  },
+  "versionId": "49b06f26-bdeb-4dba-af57-9773ef8c183b",
+  "meta": {
+    "aiBuilderAssisted": true,
+    "builderVariant": "mcp",
+    "instanceId": "e9fd3c857b3955483bdd5fb58bee35fb3ab0b06d9f25d3ebc00fe5d694ead567"
+  },
+  "nodeGroups": [],
+  "id": "BtduK7eTEqWsz6uT",
+  "tags": []
+}

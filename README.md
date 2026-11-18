@@ -33,5 +33,8 @@ Clés dans les variables d'environnement, **jamais dans le repo** : `HAI_API_KEY
 | `uv run --group outils bench3d.py test3d/etagere.jpg` | comparatif des modèles image → 3D |
 | `uv run --group outils insertion.py` | test d'insertion du produit dans la photo |
 
+## Logo
+Le logo (un raton laveur) et ses trois animations de chargement sont dans **[assets/logo/](assets/logo/README.md)**, en SVG, prêts pour le site.
+
 ## Résultats et retours sur l'API
 Voir **[RETOURS.md](RETOURS.md)** : accès des enseignes, parcours complet, Hugging Face, comparatif 3D, insertion photo, retours sur l'Agent API.

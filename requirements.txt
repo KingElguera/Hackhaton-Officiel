@@ -38,6 +38,10 @@ fastapi==0.163.2
     # via marcel
 filelock==4.2.11
     # via huggingface-hub
+fonttools==4.68.0
+    # via fpdf2
+fpdf2==2.9.0
+    # via marcel
 fsspec==2026.9.0
     # via huggingface-hub
 h11==0.16.0
@@ -84,6 +88,8 @@ opentelemetry-api==1.45.2
     # via fastapi
 packaging==26.3
     # via huggingface-hub
+pillow==13.0.0
+    # via fpdf2
 prompt-toolkit==3.0.53
     # via hai-agents
 pycparser==3.12 ; implementation_name != 'PyPy' and platform_python_implementation != 'PyPy'

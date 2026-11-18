@@ -14,6 +14,11 @@ from pydantic import BaseModel
 from .modeles import Besoin, Projet, Rapport
 
 AGENT = "h/web-surfer-flash"
+VUE_LIVE = "https://platform.hcompany.ai/agents/sessions/{}"  # même lien que agent_view_url, sans requête en plus
+
+
+def lien_live(session_id: str) -> str:
+    return VUE_LIVE.format(session_id)
 LOG = Path(__file__).resolve().parent.parent / "logs" / "runs.jsonl"
 
 REGLES = """RÈGLES : ne crée pas de compte, ne te connecte pas. Tu peux ajouter au panier et saisir le code postal pour voir le délai de livraison, mais ne va JAMAIS jusqu'au formulaire d'adresse ou au paiement : arrête-toi au panier.
@@ -76,11 +81,7 @@ def lancer(message: str, schema, max_steps: int, max_time_s: int, agent: str = A
     from hai_agents import Client
     h = Client().start_session(agent=agent, messages=message, answer_schema=schema,
                                max_steps=max_steps, max_time_s=max_time_s, timezone="Europe/Paris")
-    live = None
-    try:
-        live = h.get().agent_view_url
-    except Exception:
-        pass
+    live = lien_live(h.id)  # clé Free : 5 requêtes/min, on n'appelle pas h.get() pour le lien
     lance_le = datetime.now(timezone.utc).isoformat()
     _log({"ts": lance_le, "type": "lancement", "agent": agent, "session_id": h.id, "replay_url": live, **meta})
     return {**meta, "session_id": h.id, "live_url": live, "agent": agent, "lance_le": lance_le}
@@ -143,10 +144,7 @@ def recuperer(enseigne: str, session_id: str, lance_le: Optional[str] = None, sc
     ligne = {"ts": datetime.now(timezone.utc).isoformat(), "type": "parcours", "enseigne": enseigne,
              "session_id": session_id, "statut": str(res.status), "erreur": res.error, "erreur_code": res.error_code,
              "rapport": ans, "etapes": m.get("steps"), "cout_total": m.get("total_cost")}
-    try:
-        ligne["replay_url"] = h.get().agent_view_url
-    except Exception:
-        pass
+    ligne["replay_url"] = lien_live(session_id)
     if lance_le:
         try:
             ligne["duree_s"] = round((datetime.now(timezone.utc) - datetime.fromisoformat(lance_le)).total_seconds(), 1)

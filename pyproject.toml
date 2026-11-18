@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.163.2",
+    "fpdf2>=2.9.0",
     "hai-agents[cli]>=1.5.1",
     "huggingface-hub>=2.4.0",
     "pydantic>=2.14.3",

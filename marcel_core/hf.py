@@ -190,3 +190,33 @@ def guide(resultat: dict) -> dict:
     if not r["texte"]:
         raise ValueError("guide vide")
     return {"guide_md": r["texte"], "modele": MODELE, "duree_s": r["duree_s"]}
+
+
+# ---------------------------------------------------------------- fiche artisan : lecture des photos et du plan
+PROMPT_CHANTIER = """Tu aides Marcel, assistant des artisans rénovateurs. Voici {n} image(s) d'un chantier : {quoi}.
+Dimensions saisies par l'artisan (fiables, NE LES MODIFIE PAS) : {dims}. Pièce : {piece}.
+Décris seulement ce qui est visible, ne mesure rien sur les photos. Réponds UNIQUEMENT avec un objet JSON :
+{{
+  "type_piece": "...",
+  "elements_visibles": ["..."],
+  "etat_murs": "bon | a_reprendre | abime | inconnu",
+  "etat_sol": "bon | a_reprendre | abime | inconnu",
+  "couleur_murs_actuelle": "...",
+  "revetement_sol_actuel": "...",
+  "cotes_lues_sur_le_plan": ["cotes écrites sur le plan, telles quelles, si un plan est fourni"],
+  "points_attention": ["incohérence avec la pièce annoncée, prises/radiateurs à démonter, humidité visible…"],
+  "confiance": "haute | moyenne | basse"
+}}"""
+
+
+def lire_chantier(fiche: dict, photos: list, plan: Optional[str] = None) -> dict:
+    images = (photos or [])[:2] + ([plan] if plan else [])
+    if not images:
+        return {}
+    quoi = f"{min(len(photos or []), 2)} photo(s) de la pièce" + (", puis le plan coté" if plan else "")
+    dims = f"{fiche.get('longueur_m')} m × {fiche.get('largeur_m')} m × {fiche.get('hauteur_m') or '?'} m"
+    contenu = [{"type": "image_url", "image_url": {"url": u}} for u in images]
+    contenu.append({"type": "text", "text": PROMPT_CHANTIER.format(n=len(images), quoi=quoi, dims=dims,
+                                                                   piece=fiche.get("piece"))})
+    r = chat([{"role": "user", "content": contenu}], 900)
+    return {**(_json(r["texte"]) or {}), "modele": MODELE, "duree_s": r["duree_s"]}

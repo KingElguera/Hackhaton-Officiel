@@ -3,7 +3,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
-/* Plan d'architecte : un grand schéma lisible de gauche à droite (utilisateur → front → API → services), puis le détail en dessous. */
+/* Plan d'architecte : un grand schéma lisible de gauche à droite (artisan → site → API → services), puis les preuves. */
 :root {
   --bg: #f5f6f8; --panel: #ffffff; --fg: #17202e; --muted: #5b6575; --line: #c9d0db;
   --accent: #2456d6; --accent-soft: #e6edfc; --ok: #1f7a4d; --warn: #a15c00; --todo: #6b7280;
@@ -25,7 +25,7 @@ header { display: grid; gap: 8px; }
 .eyebrow { font: 500 12px/1 var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 h1 { font: 600 34px/1.15 var(--display); margin: 0; text-wrap: balance; }
 h2 { font: 600 22px/1.2 var(--display); margin: 0 0 14px; text-wrap: balance; }
-.lead { max-width: 68ch; color: var(--muted); margin: 0; }
+.lead { max-width: 70ch; color: var(--muted); margin: 0; }
 .lead b { color: var(--fg); font-weight: 600; }
 figure { margin: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: grid; gap: 12px; }
 .scroll { overflow-x: auto; }
@@ -37,10 +37,9 @@ figcaption { color: var(--muted); font-size: 13.5px; max-width: 90ch; }
 .sw.dash { border-top-style: dashed; }
 .sw.core { width: 14px; height: 14px; border: 2px solid var(--accent); background: var(--accent-soft); border-radius: 3px; }
 
-/* SVG : couleurs prises dans les tokens */
 .archi .box { fill: var(--panel); stroke: var(--line); stroke-width: 1.5; }
+.archi .box.d { stroke-dasharray: 6 5; }
 .archi .core { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 2; }
-.archi .band { fill: none; stroke: var(--line); stroke-dasharray: 2 4; }
 .archi .t { fill: var(--fg); font: 600 15px var(--display); }
 .archi .s { fill: var(--muted); font: 12px var(--body); }
 .archi .r { fill: var(--fg); font: 12.5px var(--body); }
@@ -53,6 +52,11 @@ figcaption { color: var(--muted); font-size: 13.5px; max-width: 90ch; }
 .archi .w { stroke: currentColor; stroke-width: 1.6; fill: none; }
 .archi .w.d { stroke-dasharray: 6 5; }
 .archi .head { fill: currentColor; }
+
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+.kpi { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: grid; gap: 4px; }
+.kpi b { font: 600 26px/1.1 var(--display); font-variant-numeric: tabular-nums; }
+.kpi span { color: var(--muted); font-size: 13px; }
 
 ol.steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; counter-reset: s; }
 ol.steps li { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: grid; gap: 6px; align-content: start; min-width: 0; }
@@ -80,144 +84,158 @@ footer { color: var(--muted); font-size: 13px; }
 
 <div class="page">
   <header>
-    <div class="eyebrow">Livrable 2 · Team 15 · Build The Future · 18/11/2026</div>
-    <h1>Architecture technique de Marcel</h1>
-    <p class="lead">Marcel envoie des agents <b>H Company</b> sur les sites des enseignes, <b>Hugging Face</b> comprend la demande et rédige le guide,
-      et <b>notre code</b> vérifie chaque produit au millimètre avant de proposer quoi que ce soit. L'agent s'arrête toujours avant le paiement.</p>
+    <div class="eyebrow">Livrable 2 · Team 15 · Build The Future · mis à jour le 18/11/2026, 18 h</div>
+    <h1>Architecture technique de Marcel Pro</h1>
+    <p class="lead">L'artisan décrit la pièce. Des agents <b>H Company</b> relèvent les prix chez plusieurs fournisseurs en parallèle,
+      <b>Hugging Face</b> lit les photos, et <b>notre code</b> calcule les quantités, choisit le meilleur prix, date les travaux
+      et pré-remplit le devis. Les agents s'arrêtent toujours avant le paiement.</p>
   </header>
 
   <figure>
     <div class="scroll">
-      <svg class="archi" viewBox="0 0 1100 640" role="img"
-        aria-label="Schéma : l'utilisateur envoie photo, texte et mesures à la web app ; la web app appelle l'API Marcel ; l'API lance les agents H Company sur les enseignes, appelle Hugging Face pour comprendre et rédiger, et vérifie tout dans marcel_core avant d'écrire dans Supabase ; les objets 3D sont pré-générés par Hugging Face Spaces puis remis à l'échelle par le code.">
+      <svg class="archi" viewBox="0 0 1100 660" role="img"
+        aria-label="Schéma : l'artisan utilise le site marcel-front, qui appelle l'API marcel-back. L'API lance trois agents H Company sur les fournisseurs, appelle Hugging Face pour lire les photos, décide tout dans marcel_core et enregistre le chantier dans Supabase. Quand un chantier est terminé, Supabase prévient n8n, qui envoie le mail à l'artisan ; n8n vérifie aussi le SIRET à l'inscription. Le rendu Blender arrive jeudi.">
         <defs>
           <marker id="fl" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
             <path class="head" d="M0,0 L10,5 L0,10 z"/>
           </marker>
         </defs>
 
-        <!-- vue live : H → front, par le haut -->
+        <!-- vue live : H → site -->
         <path class="w" d="M790,40 V20 H160 V150" marker-end="url(#fl)"/>
-        <text class="lab" x="475" y="14" text-anchor="middle">vue live de l'agent (live_url) affichée pendant la recherche</text>
+        <text class="lab" x="475" y="14" text-anchor="middle">« Regarder Marcel chercher » : vue en direct de chaque agent</text>
 
-        <!-- Utilisateur -->
+        <!-- Artisan -->
         <rect class="box" x="20" y="40" width="110" height="52" rx="8"/>
-        <text class="t" x="75" y="63" text-anchor="middle">Utilisateur</text>
+        <text class="t" x="75" y="63" text-anchor="middle">Artisan</text>
         <text class="s" x="75" y="81" text-anchor="middle">téléphone</text>
         <line class="w" x1="75" y1="92" x2="75" y2="148" marker-end="url(#fl)"/>
-        <text class="lab" x="84" y="118">photo · texte</text>
-        <text class="lab" x="84" y="133">· mesures</text>
+        <text class="lab" x="84" y="118">fiche · photos</text>
+        <text class="lab" x="84" y="133">· dimensions</text>
 
-        <!-- Front -->
+        <!-- Site -->
         <rect class="box" x="20" y="150" width="190" height="300" rx="10"/>
-        <text class="t" x="36" y="178">Web app</text>
-        <text class="s" x="36" y="196">Next.js · Vercel</text>
-        <text class="r" x="36" y="232">1 · Mon projet</text>
-        <text class="r" x="36" y="262">2 · J'ai compris</text>
-        <text class="r" x="36" y="292">3 · Marcel cherche</text>
+        <text class="t" x="36" y="178">Site marcel-front</text>
+        <text class="s" x="36" y="196">Next.js (v0) · Vercel</text>
+        <text class="r" x="36" y="232">1 · Fiche du chantier</text>
+        <text class="r" x="36" y="262">2 · Questions de Marcel</text>
+        <text class="r" x="36" y="292">3 · Agents en direct</text>
         <text class="r" x="36" y="322">4 · Résultat</text>
-        <text class="s" x="36" y="360">liste vérifiée · planning</text>
-        <text class="s" x="36" y="378">guide · 3D · réalité</text>
-        <text class="s" x="36" y="396">augmentée (model-viewer)</text>
+        <text class="s" x="36" y="360">prix · paniers · devis PDF</text>
+        <text class="s" x="36" y="378">planning · visuel</text>
 
-        <!-- Front ↔ API -->
+        <!-- Site ↔ API -->
         <line class="w" x1="210" y1="228" x2="328" y2="228" marker-end="url(#fl)"/>
         <text class="lab" x="269" y="220" text-anchor="middle">requêtes JSON</text>
         <line class="w" x1="330" y1="268" x2="212" y2="268" marker-end="url(#fl)"/>
-        <text class="lab" x="271" y="286" text-anchor="middle">projet · résultat</text>
+        <text class="lab" x="271" y="286" text-anchor="middle">questions · résultat</text>
         <line class="w" x1="210" y1="318" x2="328" y2="318" marker-end="url(#fl)"/>
-        <text class="lab" x="269" y="310" text-anchor="middle">statut / 30 s</text>
+        <text class="lab" x="269" y="310" text-anchor="middle">état / 5 s</text>
 
-        <!-- API Marcel -->
+        <!-- API -->
         <rect class="box" x="330" y="40" width="260" height="410" rx="10"/>
-        <text class="t" x="346" y="68">API Marcel</text>
-        <text class="s" x="346" y="86">Vercel Functions · Python / FastAPI</text>
-        <text class="m" x="346" y="120">POST /api/comprendre</text>
-        <text class="m" x="346" y="144">POST /api/parcours</text>
-        <text class="m" x="346" y="168">GET  /api/statut</text>
-        <text class="m" x="346" y="192">POST /api/resultat</text>
-        <rect class="core" x="346" y="230" width="228" height="150" rx="8"/>
-        <text class="acc" x="360" y="256">marcel_core</text>
-        <text class="r" x="360" y="276">le code décide :</text>
-        <text class="s" x="360" y="298">rentre ? L × P × H ≤ place − 10 mm</text>
-        <text class="s" x="360" y="318">quantités : m², couches, pertes</text>
-        <text class="s" x="360" y="338">choix du produit · budget</text>
-        <text class="s" x="360" y="358">planning : murs → sols → objets</text>
-        <text class="s" x="346" y="414">sans état : le front renvoie</text>
-        <text class="s" x="346" y="432">projet + session_id</text>
+        <text class="t" x="346" y="68">API marcel-back</text>
+        <text class="s" x="346" y="86">Vercel · Python / FastAPI</text>
+        <text class="m" x="346" y="118">POST /api/chantiers</text>
+        <text class="m" x="346" y="140">POST …/reponses  (lance)</text>
+        <text class="m" x="346" y="162">GET  …/etat</text>
+        <text class="m" x="346" y="184">GET  …/resultat</text>
+        <text class="m" x="346" y="206">POST …/devis.pdf</text>
+        <rect class="core" x="346" y="228" width="228" height="156" rx="8"/>
+        <text class="acc" x="360" y="254">marcel_core</text>
+        <text class="r" x="360" y="274">le code décide :</text>
+        <text class="s" x="360" y="296">surfaces depuis les dimensions</text>
+        <text class="s" x="360" y="316">quantités : m², couches, lots</text>
+        <text class="s" x="360" y="336">meilleur prix · paniers</text>
+        <text class="s" x="360" y="356">planning · devis (TVA 10/20 %)</text>
+        <text class="s" x="346" y="414">suivi des agents : 1 passage / 45 s</text>
+        <text class="s" x="346" y="432">(limite H : 5 requêtes/min)</text>
 
-        <!-- API ↔ H Company -->
+        <!-- API ↔ H -->
         <line class="w" x1="590" y1="100" x2="698" y2="100" marker-end="url(#fl)"/>
-        <text class="lab" x="644" y="92" text-anchor="middle">1 session / enseigne</text>
+        <text class="lab" x="644" y="92" text-anchor="middle">3 agents en //</text>
         <line class="w" x1="700" y1="138" x2="592" y2="138" marker-end="url(#fl)"/>
-        <text class="lab" x="646" y="156" text-anchor="middle">JSON format fixe</text>
+        <text class="lab" x="646" y="156" text-anchor="middle">prix au format fixe</text>
 
         <!-- H Company -->
         <rect class="box" x="700" y="40" width="380" height="170" rx="10"/>
         <text class="t" x="716" y="68">H Company · Agents API</text>
         <text class="m" x="716" y="92">h/web-surfer-flash · holo4-35b-a3b</text>
-        <text class="m" x="716" y="112">h/web-surfer-pro · holo4-27b</text>
-        <text class="s" x="958" y="112">en comparaison</text>
-        <text class="cap" x="716" y="142">ENSEIGNES · NAVIGATION RÉELLE · ARRÊT AU PANIER</text>
-        <text class="ok" x="716" y="166">✓ Castorama   ✓ IKEA   ✓ Bricorama</text>
+        <text class="s" x="716" y="112">produit, prix, unité, stock, délai, lien</text>
+        <text class="cap" x="716" y="142">FOURNISSEURS · PRIX PUBLICS · ARRÊT AVANT PAIEMENT</text>
+        <text class="ok" x="716" y="166">✓ Castorama   ✓ Bricorama   ✓ Brico Dépôt</text>
         <text class="ko" x="716" y="190">✗ Leroy Merlin, ManoMano : CAPTCHA, écartés</text>
 
-        <!-- API ↔ HF Inference -->
+        <!-- API ↔ HF -->
         <line class="w" x1="590" y1="292" x2="698" y2="292" marker-start="url(#fl)" marker-end="url(#fl)"/>
-        <text class="lab" x="644" y="284" text-anchor="middle">comprendre · guide</text>
+        <text class="lab" x="644" y="284" text-anchor="middle">lire les photos</text>
 
-        <!-- HF Inference Providers -->
+        <!-- Hugging Face -->
         <rect class="box" x="700" y="240" width="380" height="110" rx="10"/>
         <text class="t" x="716" y="268">Hugging Face · Inference Providers</text>
         <text class="m" x="716" y="294">Qwen/Qwen3.8-27B</text>
-        <text class="s" x="862" y="294">comprend la photo, rédige</text>
-        <text class="m" x="716" y="320">FLUX.1-Kontext-dev</text>
-        <text class="s" x="862" y="320">illustration « après » (essai)</text>
+        <text class="s" x="862" y="294">état des murs, incohérences</text>
+        <text class="s" x="716" y="320">ne mesure rien : les chiffres viennent du code</text>
 
-        <!-- API → Supabase (à brancher) -->
-        <path class="w d" d="M590,416 H645 V430 H698" marker-end="url(#fl)"/>
-        <text class="lab" x="644" y="406" text-anchor="middle">écrit les sessions</text>
+        <!-- API → Supabase -->
+        <path class="w" d="M590,416 H645 V430 H698" marker-end="url(#fl)"/>
+        <text class="lab" x="644" y="406" text-anchor="middle">chantier, sessions</text>
 
         <!-- Supabase -->
         <rect class="box" x="700" y="380" width="380" height="100" rx="10"/>
         <text class="t" x="716" y="408">Supabase · Postgres (Francfort)</text>
-        <text class="m" x="716" y="434">executions · releves · projets · essais</text>
-        <text class="m" x="716" y="456">skills · fournisseurs · modeles_3d</text>
+        <text class="m" x="716" y="434">projets · executions · releves</text>
+        <text class="m" x="716" y="456">essais · skills · fournisseurs · journal_n8n</text>
 
-        <!-- Bande 3D hors parcours -->
-        <rect class="band" x="310" y="500" width="780" height="126" rx="10"/>
-        <text class="cap" x="326" y="520">PRÉ-GÉNÉRATION 3D · UNE FOIS PAR PRODUIT, HORS PARCOURS</text>
-        <rect class="box" x="330" y="534" width="260" height="76" rx="8"/>
-        <text class="t" x="346" y="560">Remise à l'échelle</text>
-        <text class="s" x="346" y="580">dimensions de la fiche produit</text>
-        <text class="s" x="346" y="598">→ .glb en mètres, mis en cache</text>
-        <rect class="box" x="700" y="534" width="380" height="76" rx="8"/>
-        <text class="t" x="716" y="560">Hugging Face Spaces · ZeroGPU</text>
-        <text class="m" x="716" y="582">TRELLIS v1 · TRELLIS.2 · Hunyuan3D-2</text>
-        <text class="s" x="716" y="600">photo produit → forme 3D (quota gratuit/jour)</text>
-        <line class="w" x1="700" y1="572" x2="592" y2="572" marker-end="url(#fl)"/>
-        <text class="lab" x="646" y="564" text-anchor="middle">forme brute</text>
-        <path class="w" d="M330,572 H115 V452" marker-end="url(#fl)"/>
-        <text class="lab" x="125" y="530">.glb à l'échelle</text>
-        <text class="lab" x="125" y="545">(cache modeles_3d)</text>
+        <!-- Supabase → n8n -->
+        <line class="w" x1="890" y1="480" x2="890" y2="528" marker-end="url(#fl)"/>
+        <text class="lab" x="900" y="508">chantier terminé (webhook)</text>
+
+        <!-- n8n -->
+        <rect class="box" x="700" y="530" width="380" height="72" rx="8"/>
+        <text class="t" x="716" y="556">n8n (Erwan)</text>
+        <text class="s" x="716" y="576">vérifie le SIRET (annuaire officiel des entreprises)</text>
+        <text class="s" x="716" y="593">envoie le mail « ton chantier est prêt » (Gmail)</text>
+
+        <!-- Blender (jeudi) -->
+        <rect class="box d" x="330" y="530" width="260" height="72" rx="8"/>
+        <text class="t" x="346" y="556">Rendu Blender</text>
+        <text class="s" x="346" y="576">avant / après depuis les dimensions</text>
+        <text class="s" x="346" y="593">piloté par script · jeudi</text>
+        <line class="w d" x1="460" y1="528" x2="460" y2="452" marker-end="url(#fl)"/>
+
+        <!-- Site → n8n (SIRET) -->
+        <path class="w" d="M115,450 V628 H890 V604" marker-end="url(#fl)"/>
+        <text class="lab" x="230" y="620">SIRET à l'inscription</text>
       </svg>
     </div>
     <div class="legend">
-      <span><i class="sw"></i>en place, testé le 17–18/11</span>
-      <span><i class="sw dash"></i>à brancher aujourd'hui</span>
+      <span><i class="sw"></i>en place, testé de bout en bout le 18/11</span>
+      <span><i class="sw dash"></i>prévu jeudi</span>
       <span><i class="sw core"></i>logique de décision (notre code)</span>
     </div>
-    <figcaption>Les modèles extraient et rédigent. Toutes les décisions chiffrées (ça rentre ou pas, quantités, choix, budget, dates) sont prises par <code>marcel_core</code>.
-      Les objets 3D sont générés une fois par produit, en dehors du parcours, pour ne pas dépendre du quota GPU gratuit pendant une démo.</figcaption>
+    <figcaption>Les modèles extraient (agents H) et décrivent (Hugging Face). Toutes les décisions chiffrées sont prises par <code>marcel_core</code> :
+      quantités, choix du fournisseur, budget, dates, TVA. Le site ne parle qu'à l'API ; les clés restent dans Vercel.</figcaption>
   </figure>
+
+  <section>
+    <h2>Premier vrai chiffrage · 18/11, « Chambre de Jade »</h2>
+    <div class="kpis">
+      <div class="kpi"><b>12 prix</b><span>4 produits × 3 fournisseurs, relevés en parallèle</span></div>
+      <div class="kpi"><b>8 min</b><span>pour les 3 agents (3 min 39 à 8 min 08 chacun)</span></div>
+      <div class="kpi"><b>−17 %</b><span>164,88 € au meilleur prix contre 199,19 € chez le meilleur fournisseur unique</span></div>
+      <div class="kpi"><b>8 / 12</b><span>lignes complètes (Brico Dépôt : ni stock ni délai, magasin non sélectionnable)</span></div>
+      <div class="kpi"><b>0,63</b><span>crédit H pour tout le chiffrage</span></div>
+    </div>
+  </section>
 
   <section>
     <h2>Une demande, de bout en bout</h2>
     <ol class="steps">
-      <li><h3>Comprendre</h3><p>Photo, texte libre et mesures partent vers <code>/api/comprendre</code>. Qwen3.8-27B en tire une liste de besoins ; le code fixe les tailles maximales et écarte plomberie et électricité.</p><span class="dur">1 à 5 s</span></li>
-      <li><h3>Chercher</h3><p>Après validation, <code>/api/parcours</code> lance un agent H par enseigne. L'utilisateur regarde l'agent naviguer en direct ; le front interroge le statut toutes les 30 s.</p><span class="dur">≈ 5 min</span></li>
-      <li><h3>Vérifier</h3><p><code>/api/resultat</code> récupère les réponses par <code>session_id</code>. marcel_core rejette ce qui ne rentre pas, calcule les quantités, choisit, date les travaux et contrôle le budget.</p><span class="dur">≈ 1 s</span></li>
-      <li><h3>Restituer</h3><p>Qwen rédige le guide à partir des seules données vérifiées. Le front affiche la liste, le planning, le guide et l'objet 3D à l'échelle, visible en réalité augmentée.</p><span class="dur">≈ 5 s (guide)</span></li>
+      <li><h3>Comprendre</h3><p>Dimensions, postes et photos partent vers l'API. Le code calcule les surfaces, Hugging Face lit les photos, le code génère les questions (photo, mesure ou choix).</p><span class="dur">≈ 5 s</span></li>
+      <li><h3>Chercher</h3><p>Après les réponses, 3 agents H partent en même temps chez 3 fournisseurs. L'artisan peut les regarder chercher en direct.</p><span class="dur">4 à 8 min</span></li>
+      <li><h3>Décider</h3><p>Le code calcule combien d'unités acheter chez chacun (pots de 2,5 L contre 10 L), choisit le moins cher, fait les paniers, le planning et le devis.</p><span class="dur">≈ 1 s</span></li>
+      <li><h3>Livrer</h3><p>Le site affiche prix, paniers, devis modifiable et PDF. Supabase prévient n8n, qui envoie le mail à l'artisan.</p><span class="dur">≈ 5 s</span></li>
     </ol>
   </section>
 
@@ -227,29 +245,45 @@ footer { color: var(--muted); font-size: 13px; }
       <table>
         <thead><tr><th>Outil</th><th>Rôle</th><th>Modèle</th><th>Mesuré</th><th>État</th></tr></thead>
         <tbody>
-          <tr><td>H Company Agents API</td><td>Naviguer sur les sites, relever prix, dimensions, stock, délai, préparer le panier</td><td><code>h/web-surfer-flash</code><br><code>holo4-35b-a3b</code></td><td class="num">72–303 s / session<br>13–54 étapes<br>0,03–0,16 crédit</td><td><span class="pill ok">en place</span></td></tr>
-          <tr><td>H Company Agents API</td><td>Même mission, pour comparer précision, temps et coût sur 5 produits</td><td><code>h/web-surfer-pro</code><br><code>holo4-27b</code></td><td class="num">comparatif du 18/11</td><td><span class="pill warn">en test</span></td></tr>
-          <tr><td>Hugging Face Inference Providers</td><td>Comprendre la photo et la demande, rédiger le guide de travaux</td><td><code>Qwen/Qwen3.8-27B</code></td><td class="num">1,3–4,4 s</td><td><span class="pill ok">en place</span></td></tr>
-          <tr><td>Hugging Face Inference Providers</td><td>Illustration « après travaux » ; jamais pour juger d'une taille (agrandit le produit ×2,5)</td><td><code>FLUX.1-Kontext-dev</code></td><td class="num">≈ 18 s</td><td><span class="pill warn">en test</span></td></tr>
-          <tr><td>Hugging Face Spaces (ZeroGPU)</td><td>Photo produit → objet 3D, remis à l'échelle par le code</td><td><code>TRELLIS v1</code> · <code>TRELLIS.2</code><br><code>Hunyuan3D-2</code></td><td class="num">12–37 s / objet</td><td><span class="pill ok">pré-généré</span></td></tr>
-          <tr><td>Supabase (Postgres)</td><td>Sessions d'agents, relevés, projets, grille des essais</td><td>—</td><td class="num">7 tables + vue</td><td><span class="pill ok">créé</span></td></tr>
-          <tr><td>Vercel</td><td>Héberger la web app et l'API (fonctions Python)</td><td>—</td><td class="num">—</td><td><span class="pill todo">aujourd'hui</span></td></tr>
-          <tr><td>GitHub</td><td>Code source, déploiement automatique vers Vercel</td><td>—</td><td class="num">—</td><td><span class="pill ok">en place</span></td></tr>
-          <tr><td>n8n</td><td>Automatisations de l'équipe (rôle à préciser)</td><td>—</td><td class="num">—</td><td><span class="pill todo">à préciser</span></td></tr>
+          <tr><td>H Company Agents API</td><td>Relever prix, unité, stock, délai et lien chez chaque fournisseur</td><td><code>h/web-surfer-flash</code><br><code>holo4-35b-a3b</code></td><td class="num">3,5–8 min / agent<br>34–90 étapes<br>0,13–0,34 crédit</td><td><span class="pill ok">en place</span></td></tr>
+          <tr><td>H Company Agents API</td><td>Même mission, pour comparer précision, temps et coût</td><td><code>h/web-surfer-pro</code><br><code>holo4-27b</code></td><td class="num">—</td><td><span class="pill warn">à comparer</span></td></tr>
+          <tr><td>Hugging Face Inference Providers</td><td>Lire les photos, signaler les incohérences ; rédiger</td><td><code>Qwen/Qwen3.8-27B</code></td><td class="num">≈ 3 s</td><td><span class="pill ok">en place</span></td></tr>
+          <tr><td>Supabase (Postgres)</td><td>Chantiers, sessions d'agents, relevés, grille des essais</td><td>—</td><td class="num">8 tables</td><td><span class="pill ok">en place</span></td></tr>
+          <tr><td>n8n</td><td>Vérification du SIRET, mail « chantier prêt »</td><td>—</td><td class="num">SIRET &lt; 2 s</td><td><span class="pill ok">en place</span></td></tr>
+          <tr><td>Vercel</td><td>Héberger le site (marcel-front) et l'API (marcel-back)</td><td>—</td><td class="num">déploiement ≈ 40 s</td><td><span class="pill ok">en place</span></td></tr>
+          <tr><td>v0</td><td>Construire le site à partir du brief et du contrat d'API</td><td>—</td><td class="num">—</td><td><span class="pill ok">en place</span></td></tr>
+          <tr><td>Blender</td><td>Rendu avant / après, piloté par script à partir des dimensions</td><td>—</td><td class="num">—</td><td><span class="pill todo">jeudi</span></td></tr>
+          <tr><td>GitHub</td><td>Code du back, workflows n8n, déploiement automatique</td><td>—</td><td class="num">—</td><td><span class="pill ok">en place</span></td></tr>
         </tbody>
       </table>
     </div>
   </section>
 
   <section>
-    <h2>Règles de conception</h2>
-    <div class="rules">
-      <div><b>L'IA extrait, le code décide</b><p>Le code a rejeté les étagères de 800 mm proposées par l'agent pour une niche de 800 mm (maximum 790 mm avec la marge).</p></div>
-      <div><b>Arrêt avant le paiement</b><p>Les agents peuvent remplir un panier pour lire le délai de livraison, jamais aller jusqu'à l'adresse ou au paiement.</p></div>
-      <div><b>Pas de contournement</b><p>Sur un CAPTCHA, l'agent s'arrête en 2 ou 3 étapes et le signale. Les enseignes concernées sont écartées.</p></div>
-      <div><b>Secrets hors du code</b><p>Clés H, Hugging Face et Supabase en variables d'environnement, jamais dans le repo ni dans le front.</p></div>
+    <h2>Roadmap jusqu'à jeudi</h2>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Quand</th><th>Quoi</th><th>Pourquoi</th></tr></thead>
+        <tbody>
+          <tr><td>Mer. 18 soir</td><td>Corrections du 1er vrai chiffrage en ligne ; comparatif flash / pro sur les mêmes produits</td><td>choisir l'agent sur des mesures</td></tr>
+          <tr><td>Jeu. 19 matin</td><td>Liste de fournisseurs pros d'Erwan : test d'accès, puis chiffrage 1 pièce × 10 produits × 3 fournisseurs</td><td>minimum de la brique 1</td></tr>
+          <tr><td>Jeu. 19 midi</td><td>Point de vigilance : si retard, on finit le chiffrage en priorité</td><td>c'est ce que le jury note en direct</td></tr>
+          <tr><td>Jeu. 19 après-midi</td><td>Rendu Blender avant / après ; plusieurs parcours pour mesurer taux de succès, durée et coût</td><td>brique 3 + chiffres solides</td></tr>
+          <tr><td>Ven. 20</td><td>Répétition, puis démo en direct</td><td>—</td></tr>
+        </tbody>
+      </table>
     </div>
   </section>
 
-  <footer>Marcel · Team 15 · sources : tests du 17/11 et du 18/11 (logs, Supabase <code>executions</code> et <code>essais</code>).</footer>
+  <section>
+    <h2>Règles de conception et limites</h2>
+    <div class="rules">
+      <div><b>L'IA extrait, le code décide</b><p>Les agents ont mis le code-barres à la place de notre référence produit : le code rattache désormais les lignes par leur ordre. Aucun chiffre affiché ne vient d'un modèle sans vérification.</p></div>
+      <div><b>Prix publics uniquement</b><p>Sans connexion, on ne voit pas les remises pros. Le site le dit : « ta remise habituelle n'est pas appliquée ».</p></div>
+      <div><b>Pas de contournement</b><p>Sur un CAPTCHA, l'agent s'arrête et le signale. Leroy Merlin et ManoMano sont écartés.</p></div>
+      <div><b>Arrêt avant le paiement</b><p>Les paniers sont des listes de liens et de quantités : l'artisan commande lui-même.</p></div>
+    </div>
+  </section>
+
+  <footer>Marcel Pro · Team 15 · sources : chiffrage réel du 18/11 (Supabase <code>projets</code>, <code>executions</code>) et tests du 17/11.</footer>
 </div>

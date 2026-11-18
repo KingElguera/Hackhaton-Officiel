@@ -32,6 +32,12 @@ Clés dans les variables d'environnement, **jamais dans le repo** : `HAI_API_KEY
 | `uv run --group outils test3d.py test3d/etagere.jpg --modele trellis` | objet 3D du produit, remis à l'échelle, posé dans la niche |
 | `uv run --group outils bench3d.py test3d/etagere.jpg` | comparatif des modèles image → 3D |
 | `uv run --group outils insertion.py` | test d'insertion du produit dans la photo |
+| `uv run --group outils meuble3d.py photo.jpg --largeur 210` | photo d'un meuble → objet 3D à l'échelle (TRELLIS), mis en cache dans `objets3d/` |
+| `uv run --group outils atelier.py` | l'atelier : surveille la file des rendus, déclenche TRELLIS puis Blender, dépose les images (`--fichier cas/rendu_chambre.json` pour essayer sans Supabase) |
+| `Blender --background --python rendu/marcel_rendu.py -- rendu/chantier_exemple.json out/rendu` | fichier de chantier → photos et panorama à 360° de la pièce (voir [docs/MEUBLES_3D.md](docs/MEUBLES_3D.md)) |
+
+## Logo
+Le logo (un raton laveur) et ses trois animations de chargement sont dans **[assets/logo/](assets/logo/README.md)**, en SVG, prêts pour le site.
 
 ## Résultats et retours sur l'API
 Voir **[RETOURS.md](RETOURS.md)** : accès des enseignes, parcours complet, Hugging Face, comparatif 3D, insertion photo, retours sur l'Agent API.

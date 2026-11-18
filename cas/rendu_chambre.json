@@ -1,0 +1,16 @@
+{
+  "piece": {"largeur_cm": 400, "profondeur_cm": 350, "hauteur_cm": 250},
+  "peinture": "vert sauge",
+  "sol": {"teintes": ["#B98A5A", "#8E6238"]},
+  "ouvertures": [
+    {"type": "fenetre", "mur": "gauche", "position_cm": 110, "largeur_cm": 120, "hauteur_cm": 125, "allege_cm": 90},
+    {"type": "porte", "mur": "fond", "position_cm": 300, "largeur_cm": 83, "hauteur_cm": 204}
+  ],
+  "meubles": [
+    {"nom": "étagère murale", "photo": "test3d/etagere.jpg", "largeur_cm": 60, "profondeur_cm": 17, "hauteur_cm": 20,
+     "mur": "droit", "position_cm": 100, "pose_cm": 120},
+    {"nom": "lit", "largeur_cm": 160, "profondeur_cm": 200, "hauteur_cm": 55, "mur": "fond", "position_cm": 60, "couleur": "#EFEAE0"}
+  ],
+  "vues": ["photo1", "photo2", "dessus", "panorama"],
+  "qualite": "rapide"
+}

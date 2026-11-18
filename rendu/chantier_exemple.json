@@ -1,0 +1,16 @@
+{
+ "largeur": 4.0, "profondeur": 3.5, "hauteur": 2.5,
+ "peinture": "#A9B8A2", "plinthe": "#F4F1EA",
+ "sol": ["#B98A5A", "#8E6238"],
+ "ouvertures": [
+  {"type": "fenetre", "mur": "gauche", "position": 1.1, "largeur": 1.2, "hauteur": 1.25, "allege": 0.9},
+  {"type": "porte", "mur": "fond", "position": 3.0, "largeur": 0.83, "hauteur": 2.04}
+ ],
+ "meubles": [
+  {"nom": "lit", "taille": [1.6, 2.0, 0.35], "pos": [-0.3, 0.72], "couleur": "#E9E4DA"},
+  {"nom": "matelas", "taille": [1.55, 1.95, 0.2], "pos": [-0.3, 0.72], "z": 0.35, "couleur": "#FFFFFF"},
+  {"nom": "etagere_murale", "modele": "objets3d/722491aed677_600x170x200.glb", "mur": "droit", "largeur_m": 0.6, "position": 1.0, "hauteur_pose_m": 1.2}
+ ],
+ "qualite": "rapide",
+ "vues": ["photo1", "photo2", "dessus", "panorama"]
+}

@@ -16,3 +16,8 @@ wheels/
 
 # Pages HTML de test autonomes (3D encodée dedans, regénérables depuis les .glb)
 test3d/*.html
+
+# Objets 3D générés (cache, regénérables) et rendus Blender
+objets3d/
+out/rendu/
+out/atelier/

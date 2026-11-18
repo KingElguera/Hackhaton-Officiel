@@ -7,6 +7,9 @@ Sans état : le front garde le `projet` et les `sessions` et les renvoie à chaq
   POST /api/parcours                    → lance un agent H par enseigne → sessions + liens live
   GET  /api/statut?ids=<id1>,<id2>      → avancement des agents (appeler toutes les 30 s max)
   POST /api/resultat                    → vérification, choix, planning, budget (+ guide)
+  POST /api/rendu                       → demande les images 3D de la pièce (mise en file pour l'atelier)
+  GET  /api/rendu?id=<id>               → où en est le rendu, puis les images (appeler toutes les 10 s)
+  POST /api/chantiers/<id>/rendu        → (re)demande les images d'un chantier ; fait automatiquement quand il est chiffré
 """
 import os
 import sys
@@ -26,6 +29,7 @@ from pydantic import BaseModel, Field  # noqa: E402
 
 from marcel_core import Projet  # noqa: E402
 from marcel_core import agents  # noqa: E402
+from marcel_core.rendus import DemandeRendu  # noqa: E402
 from marcel_core.verif import normaliser, synthese  # noqa: E402
 
 app = FastAPI(title="Marcel API", version="0.1")
@@ -279,6 +283,12 @@ def _finaliser(p: dict) -> dict:
                 enregistrer_session({**s, **evaluer(chantier, s.get("reponse"))}, chantier, p["id"], skill)
     except Exception as e:
         print(f"journal executions impossible : {e}", flush=True)
+    try:  # le visuel est demandé à l'atelier (TRELLIS + Blender) ; il arrive quelques minutes après, sans rien bloquer
+        from marcel_core import rendus
+        ligne, alertes = rendus.demander_pour_projet({**p, "fiche": fiche}, choix)
+        resultat["visuel"].update(rendu_id=ligne["id"], etat="a_faire", alertes=alertes)
+    except Exception as e:
+        print(f"rendu non demandé : {type(e).__name__}: {e}", flush=True)
     return _maj(p["id"], {"resultat": resultat, "devis": dv, "total_eur": ch.totaux(dv)["total_ttc"],
                           "statut": "termine"})  # → webhook Supabase → n8n → mail
 
@@ -362,3 +372,49 @@ def exporter_devis_pdf(cid: str, d: DemandeDevisPdf):
 @app.post("/api/chantiers/{cid}/envoye")
 def marquer_envoye(cid: str):
     return ch.avancement(_maj(cid, {"statut": "envoye"}))
+
+
+# ---------------------------------------------------------------- rendus 3D (TRELLIS + Blender, faits par l'atelier)
+@app.post("/api/rendu")
+def api_rendu(d: DemandeRendu):
+    """Met une demande de rendu dans la file. L'atelier (atelier.py) la prend, génère les meubles en 3D,
+    lance Blender et dépose les images. Répond tout de suite : suivre avec GET /api/rendu?id=…"""
+    from marcel_core import rendus
+    problemes = rendus.verifier(d)
+    if problemes:
+        raise HTTPException(400, "demande incohérente : " + " ; ".join(problemes))
+    try:
+        ligne = rendus.creer(d)
+    except rendus.SupabaseAbsent as e:
+        raise HTTPException(503, f"rendu indisponible : {e}")
+    except Exception as e:
+        _erreur(e, "mise en file du rendu (Supabase)")
+    return {"id": ligne["id"], "etat": ligne["etat"]}
+
+
+@app.get("/api/rendu")
+def api_rendu_statut(id: str = Query(..., min_length=8, description="id renvoyé par POST /api/rendu")):
+    from marcel_core import rendus
+    try:
+        ligne = rendus.lire(id)
+    except rendus.SupabaseAbsent as e:
+        raise HTTPException(503, f"rendu indisponible : {e}")
+    except Exception as e:
+        _erreur(e, "lecture du rendu (Supabase)")
+    if not ligne:
+        raise HTTPException(404, "rendu inconnu")
+    return {**ligne, "termine": ligne["etat"] in ("fait", "echec")}
+
+
+@app.post("/api/chantiers/{cid}/rendu")
+def rendu_du_chantier(cid: str):
+    """Demande les images 3D d'un chantier à partir de sa fiche et de ses choix. Rien à envoyer : tout est déjà en base."""
+    from marcel_core import rendus
+    p = _projet(cid)
+    try:
+        ligne, alertes = rendus.demander_pour_projet(p)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    except Exception as e:
+        _erreur(e, "mise en file du rendu (Supabase)")
+    return {"id": ligne["id"], "etat": ligne["etat"], "alertes": alertes}

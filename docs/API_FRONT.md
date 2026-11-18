@@ -136,3 +136,75 @@ L'attribut `ar` ajoute le bouton « Voir chez moi » (réalité augmentée) sur 
 
 **Erreurs** : `429` = trop d'appels H (attendre 30 s et réessayer) ; `502` = service externe en échec (message dans `detail`).
 `GET /api/sante` vérifie que le back répond et que les clés sont configurées.
+
+---
+
+## 5. Rendu 3D de la pièce : `POST /api/rendu` puis `GET /api/rendu?id=…`
+
+Les images sont fabriquées **hors de Vercel**, par l'atelier (`atelier.py`, sur un poste avec Blender).
+L'API met seulement la demande en file et dit où elle en est. Compter 1 à 4 minutes.
+
+```json
+{
+  "piece": {"largeur_cm": 400, "profondeur_cm": 350, "hauteur_cm": 250},
+  "peinture": "vert sauge",
+  "sol": {"image": "https://…/parquet.jpg", "taille_cm": 340},
+  "ouvertures": [
+    {"type": "fenetre", "mur": "gauche", "position_cm": 110, "largeur_cm": 120, "hauteur_cm": 125, "allege_cm": 90},
+    {"type": "porte", "mur": "fond", "position_cm": 300, "largeur_cm": 83, "hauteur_cm": 204}
+  ],
+  "meubles": [
+    {"nom": "canapé", "photo": "data:image/jpeg;base64,…", "largeur_cm": 210, "mur": "fond", "position_cm": 60}
+  ],
+  "vues": ["photo1", "photo2", "dessus", "panorama"],
+  "qualite": "rapide"
+}
+```
+
+- Seule `piece` est obligatoire. Toutes les mesures sont en **centimètres**.
+- `peinture` : un nom courant (« blanc », « vert sauge », « terracotta »…) ou un code `#RRGGBB`.
+- `sol.image` : la photo du revêtement (lien ou data URL) et `taille_cm`, la taille réelle qu'elle couvre.
+  Sans photo : `sol.teintes`, deux couleurs de lames.
+- `mur` : `fond`, `avant`, `gauche` ou `droit`. La caméra des photos est côté `avant`.
+- `position_cm` : du coin gauche du mur au bord gauche de l'élément, vu de l'intérieur de la pièce.
+- Un meuble **avec `photo`** est modélisé en 3D par TRELLIS (30 à 40 s la première fois, puis en cache).
+  Sa `largeur_cm` est obligatoire. Sans photo, donner aussi `profondeur_cm` et `hauteur_cm` : il est affiché en volume simple.
+- 6 meubles au maximum.
+
+Réponse immédiate : `{"id": "…", "etat": "a_faire"}`. Une demande incohérente (porte qui dépasse du mur…) renvoie `400` avec la raison.
+
+Ensuite, `GET /api/rendu?id=…` toutes les 10 s jusqu'à `"termine": true` :
+
+```json
+{
+  "id": "…", "etat": "fait", "termine": true,
+  "resultat": {
+    "images": [
+      {"fichier": "photo1.png", "url": "https://…/rendus/<id>/photo1.png", "secondes": 16.1},
+      {"fichier": "panorama_360.jpg", "url": "https://…/rendus/<id>/panorama_360.jpg", "secondes": 88.7}
+    ],
+    "meubles_3d": [{"nom": "canapé", "modele": "TRELLIS.2 (Microsoft)", "url": "https://…/objets3d/….glb", "ecart_proportions_pct": 7.8}],
+    "alertes": ["canapé : profondeur et hauteur déduites du modèle : donner les trois dimensions pour un objet exact"],
+    "total_secondes": 194.1
+  }
+}
+```
+
+- `etat` : `a_faire` → `en_cours` → `fait` ou `echec` (avec `erreur`).
+- `panorama_360.jpg` est une image équirectangulaire, à afficher dans une visionneuse de panorama (visite à 360°).
+- Les fichiers `.glb` de `meubles_3d` s'affichent avec `<model-viewer>`.
+- **Toujours afficher `alertes`** : elles disent ce qui a été remplacé ou estimé.
+- Si Supabase n'est pas configuré côté back, les deux routes renvoient `503`.
+
+
+### Le rendu d'un chantier du parcours artisan
+
+Rien à appeler : dès qu'un chantier est chiffré, son rendu est mis en file tout seul.
+Le site lit ensuite `resultat.visuel` dans `GET /api/chantiers/<id>/resultat` :
+
+- `etat` : `a_faire`, puis `fait` quand l'atelier a fini (quelques minutes) ;
+- `apres_url` (photo), `dessus_url` (vue de dessus), `panorama_url` (visite à 360°) ;
+- `alertes` : par exemple « emplacement des portes et des fenêtres estimé », car la fiche donne leur nombre, pas leur position.
+
+Pour relancer un rendu à la main : `POST /api/chantiers/<id>/rendu` (sans corps).
+Il faut que la table `rendus` existe (`supabase/rendus.sql`) et qu'un atelier tourne (`./demarrer.sh atelier`).

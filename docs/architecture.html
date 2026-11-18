@@ -1,0 +1,255 @@
+<title>Architecture Marcel</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Plan d'architecte : un grand schéma lisible de gauche à droite (utilisateur → front → API → services), puis le détail en dessous. */
+:root {
+  --bg: #f5f6f8; --panel: #ffffff; --fg: #17202e; --muted: #5b6575; --line: #c9d0db;
+  --accent: #2456d6; --accent-soft: #e6edfc; --ok: #1f7a4d; --warn: #a15c00; --todo: #6b7280;
+  --display: "Space Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #11161f; --panel: #19202c; --fg: #e6eaf1; --muted: #9aa4b5; --line: #343e4f;
+  --accent: #7ea2ff; --accent-soft: #1d2a4a; --ok: #5cc493; --warn: #f0a94a; --todo: #9aa4b5; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #11161f; --panel: #19202c; --fg: #e6eaf1; --muted: #9aa4b5; --line: #343e4f;
+  --accent: #7ea2ff; --accent-soft: #1d2a4a; --ok: #5cc493; --warn: #f0a94a; --todo: #9aa4b5; color-scheme: dark }
+body { background: var(--bg); color: var(--fg); font: 15px/1.55 var(--body); }
+.page { max-width: 1120px; margin: 0 auto; padding-block: 32px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 40px; }
+header { display: grid; gap: 8px; }
+.eyebrow { font: 500 12px/1 var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h1 { font: 600 34px/1.15 var(--display); margin: 0; text-wrap: balance; }
+h2 { font: 600 22px/1.2 var(--display); margin: 0 0 14px; text-wrap: balance; }
+.lead { max-width: 68ch; color: var(--muted); margin: 0; }
+.lead b { color: var(--fg); font-weight: 600; }
+figure { margin: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: grid; gap: 12px; }
+.scroll { overflow-x: auto; }
+svg.archi { width: 100%; min-width: 900px; height: auto; display: block; color: var(--fg); }
+figcaption { color: var(--muted); font-size: 13.5px; max-width: 90ch; }
+.legend { display: flex; flex-wrap: wrap; gap: 18px; font-size: 13px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 8px; }
+.sw { width: 28px; height: 0; border-top: 2px solid var(--fg); }
+.sw.dash { border-top-style: dashed; }
+.sw.core { width: 14px; height: 14px; border: 2px solid var(--accent); background: var(--accent-soft); border-radius: 3px; }
+
+/* SVG : couleurs prises dans les tokens */
+.archi .box { fill: var(--panel); stroke: var(--line); stroke-width: 1.5; }
+.archi .core { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 2; }
+.archi .band { fill: none; stroke: var(--line); stroke-dasharray: 2 4; }
+.archi .t { fill: var(--fg); font: 600 15px var(--display); }
+.archi .s { fill: var(--muted); font: 12px var(--body); }
+.archi .r { fill: var(--fg); font: 12.5px var(--body); }
+.archi .m { fill: var(--fg); font: 12px var(--mono); }
+.archi .lab { fill: var(--muted); font: 11.5px var(--body); }
+.archi .acc { fill: var(--accent); font: 600 13px var(--display); }
+.archi .ok { fill: var(--ok); font: 500 12.5px var(--body); }
+.archi .ko { fill: var(--muted); font: 12px var(--body); }
+.archi .cap { fill: var(--muted); font: 500 11px var(--body); letter-spacing: .08em; }
+.archi .w { stroke: currentColor; stroke-width: 1.6; fill: none; }
+.archi .w.d { stroke-dasharray: 6 5; }
+.archi .head { fill: currentColor; }
+
+ol.steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; counter-reset: s; }
+ol.steps li { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: grid; gap: 6px; align-content: start; min-width: 0; }
+ol.steps li::before { counter-increment: s; content: "Étape " counter(s); font: 500 12px var(--body); letter-spacing: .06em; text-transform: uppercase; color: var(--accent); }
+ol.steps h3 { font: 600 16px/1.3 var(--display); margin: 0; }
+ol.steps p { margin: 0; color: var(--muted); font-size: 14px; }
+.dur { font: 500 12.5px var(--mono); color: var(--fg); font-variant-numeric: tabular-nums; }
+
+.tablewrap { overflow-x: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; }
+table { border-collapse: collapse; width: 100%; min-width: 760px; font-size: 14px; }
+th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font: 500 12px var(--body); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+tr:last-child td { border-bottom: 0; }
+td code { font: 12.5px var(--mono); }
+td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pill { display: inline-block; font: 500 12px/1 var(--body); padding: 5px 8px; border-radius: 999px; border: 1px solid currentColor; white-space: nowrap; }
+.pill.ok { color: var(--ok); } .pill.warn { color: var(--warn); } .pill.todo { color: var(--todo); }
+
+.rules { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+.rules div { border-left: 3px solid var(--accent); padding: 4px 0 4px 14px; min-width: 0; }
+.rules b { display: block; font: 600 15px/1.3 var(--display); margin-bottom: 4px; }
+.rules p { margin: 0; color: var(--muted); font-size: 14px; }
+footer { color: var(--muted); font-size: 13px; }
+</style>
+
+<div class="page">
+  <header>
+    <div class="eyebrow">Livrable 2 · Team 15 · Build The Future · 18/11/2026</div>
+    <h1>Architecture technique de Marcel</h1>
+    <p class="lead">Marcel envoie des agents <b>H Company</b> sur les sites des enseignes, <b>Hugging Face</b> comprend la demande et rédige le guide,
+      et <b>notre code</b> vérifie chaque produit au millimètre avant de proposer quoi que ce soit. L'agent s'arrête toujours avant le paiement.</p>
+  </header>
+
+  <figure>
+    <div class="scroll">
+      <svg class="archi" viewBox="0 0 1100 640" role="img"
+        aria-label="Schéma : l'utilisateur envoie photo, texte et mesures à la web app ; la web app appelle l'API Marcel ; l'API lance les agents H Company sur les enseignes, appelle Hugging Face pour comprendre et rédiger, et vérifie tout dans marcel_core avant d'écrire dans Supabase ; les objets 3D sont pré-générés par Hugging Face Spaces puis remis à l'échelle par le code.">
+        <defs>
+          <marker id="fl" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path class="head" d="M0,0 L10,5 L0,10 z"/>
+          </marker>
+        </defs>
+
+        <!-- vue live : H → front, par le haut -->
+        <path class="w" d="M790,40 V20 H160 V150" marker-end="url(#fl)"/>
+        <text class="lab" x="475" y="14" text-anchor="middle">vue live de l'agent (live_url) affichée pendant la recherche</text>
+
+        <!-- Utilisateur -->
+        <rect class="box" x="20" y="40" width="110" height="52" rx="8"/>
+        <text class="t" x="75" y="63" text-anchor="middle">Utilisateur</text>
+        <text class="s" x="75" y="81" text-anchor="middle">téléphone</text>
+        <line class="w" x1="75" y1="92" x2="75" y2="148" marker-end="url(#fl)"/>
+        <text class="lab" x="84" y="118">photo · texte</text>
+        <text class="lab" x="84" y="133">· mesures</text>
+
+        <!-- Front -->
+        <rect class="box" x="20" y="150" width="190" height="300" rx="10"/>
+        <text class="t" x="36" y="178">Web app</text>
+        <text class="s" x="36" y="196">Next.js · Vercel</text>
+        <text class="r" x="36" y="232">1 · Mon projet</text>
+        <text class="r" x="36" y="262">2 · J'ai compris</text>
+        <text class="r" x="36" y="292">3 · Marcel cherche</text>
+        <text class="r" x="36" y="322">4 · Résultat</text>
+        <text class="s" x="36" y="360">liste vérifiée · planning</text>
+        <text class="s" x="36" y="378">guide · 3D · réalité</text>
+        <text class="s" x="36" y="396">augmentée (model-viewer)</text>
+
+        <!-- Front ↔ API -->
+        <line class="w" x1="210" y1="228" x2="328" y2="228" marker-end="url(#fl)"/>
+        <text class="lab" x="269" y="220" text-anchor="middle">requêtes JSON</text>
+        <line class="w" x1="330" y1="268" x2="212" y2="268" marker-end="url(#fl)"/>
+        <text class="lab" x="271" y="286" text-anchor="middle">projet · résultat</text>
+        <line class="w" x1="210" y1="318" x2="328" y2="318" marker-end="url(#fl)"/>
+        <text class="lab" x="269" y="310" text-anchor="middle">statut / 30 s</text>
+
+        <!-- API Marcel -->
+        <rect class="box" x="330" y="40" width="260" height="410" rx="10"/>
+        <text class="t" x="346" y="68">API Marcel</text>
+        <text class="s" x="346" y="86">Vercel Functions · Python / FastAPI</text>
+        <text class="m" x="346" y="120">POST /api/comprendre</text>
+        <text class="m" x="346" y="144">POST /api/parcours</text>
+        <text class="m" x="346" y="168">GET  /api/statut</text>
+        <text class="m" x="346" y="192">POST /api/resultat</text>
+        <rect class="core" x="346" y="230" width="228" height="150" rx="8"/>
+        <text class="acc" x="360" y="256">marcel_core</text>
+        <text class="r" x="360" y="276">le code décide :</text>
+        <text class="s" x="360" y="298">rentre ? L × P × H ≤ place − 10 mm</text>
+        <text class="s" x="360" y="318">quantités : m², couches, pertes</text>
+        <text class="s" x="360" y="338">choix du produit · budget</text>
+        <text class="s" x="360" y="358">planning : murs → sols → objets</text>
+        <text class="s" x="346" y="414">sans état : le front renvoie</text>
+        <text class="s" x="346" y="432">projet + session_id</text>
+
+        <!-- API ↔ H Company -->
+        <line class="w" x1="590" y1="100" x2="698" y2="100" marker-end="url(#fl)"/>
+        <text class="lab" x="644" y="92" text-anchor="middle">1 session / enseigne</text>
+        <line class="w" x1="700" y1="138" x2="592" y2="138" marker-end="url(#fl)"/>
+        <text class="lab" x="646" y="156" text-anchor="middle">JSON format fixe</text>
+
+        <!-- H Company -->
+        <rect class="box" x="700" y="40" width="380" height="170" rx="10"/>
+        <text class="t" x="716" y="68">H Company · Agents API</text>
+        <text class="m" x="716" y="92">h/web-surfer-flash · holo4-35b-a3b</text>
+        <text class="m" x="716" y="112">h/web-surfer-pro · holo4-27b</text>
+        <text class="s" x="958" y="112">en comparaison</text>
+        <text class="cap" x="716" y="142">ENSEIGNES · NAVIGATION RÉELLE · ARRÊT AU PANIER</text>
+        <text class="ok" x="716" y="166">✓ Castorama   ✓ IKEA   ✓ Bricorama</text>
+        <text class="ko" x="716" y="190">✗ Leroy Merlin, ManoMano : CAPTCHA, écartés</text>
+
+        <!-- API ↔ HF Inference -->
+        <line class="w" x1="590" y1="292" x2="698" y2="292" marker-start="url(#fl)" marker-end="url(#fl)"/>
+        <text class="lab" x="644" y="284" text-anchor="middle">comprendre · guide</text>
+
+        <!-- HF Inference Providers -->
+        <rect class="box" x="700" y="240" width="380" height="110" rx="10"/>
+        <text class="t" x="716" y="268">Hugging Face · Inference Providers</text>
+        <text class="m" x="716" y="294">Qwen/Qwen3.8-27B</text>
+        <text class="s" x="862" y="294">comprend la photo, rédige</text>
+        <text class="m" x="716" y="320">FLUX.1-Kontext-dev</text>
+        <text class="s" x="862" y="320">illustration « après » (essai)</text>
+
+        <!-- API → Supabase (à brancher) -->
+        <path class="w d" d="M590,416 H645 V430 H698" marker-end="url(#fl)"/>
+        <text class="lab" x="644" y="406" text-anchor="middle">écrit les sessions</text>
+
+        <!-- Supabase -->
+        <rect class="box" x="700" y="380" width="380" height="100" rx="10"/>
+        <text class="t" x="716" y="408">Supabase · Postgres (Francfort)</text>
+        <text class="m" x="716" y="434">executions · releves · projets · essais</text>
+        <text class="m" x="716" y="456">skills · fournisseurs · modeles_3d</text>
+
+        <!-- Bande 3D hors parcours -->
+        <rect class="band" x="310" y="500" width="780" height="126" rx="10"/>
+        <text class="cap" x="326" y="520">PRÉ-GÉNÉRATION 3D · UNE FOIS PAR PRODUIT, HORS PARCOURS</text>
+        <rect class="box" x="330" y="534" width="260" height="76" rx="8"/>
+        <text class="t" x="346" y="560">Remise à l'échelle</text>
+        <text class="s" x="346" y="580">dimensions de la fiche produit</text>
+        <text class="s" x="346" y="598">→ .glb en mètres, mis en cache</text>
+        <rect class="box" x="700" y="534" width="380" height="76" rx="8"/>
+        <text class="t" x="716" y="560">Hugging Face Spaces · ZeroGPU</text>
+        <text class="m" x="716" y="582">TRELLIS v1 · TRELLIS.2 · Hunyuan3D-2</text>
+        <text class="s" x="716" y="600">photo produit → forme 3D (quota gratuit/jour)</text>
+        <line class="w" x1="700" y1="572" x2="592" y2="572" marker-end="url(#fl)"/>
+        <text class="lab" x="646" y="564" text-anchor="middle">forme brute</text>
+        <path class="w" d="M330,572 H115 V452" marker-end="url(#fl)"/>
+        <text class="lab" x="125" y="530">.glb à l'échelle</text>
+        <text class="lab" x="125" y="545">(cache modeles_3d)</text>
+      </svg>
+    </div>
+    <div class="legend">
+      <span><i class="sw"></i>en place, testé le 17–18/11</span>
+      <span><i class="sw dash"></i>à brancher aujourd'hui</span>
+      <span><i class="sw core"></i>logique de décision (notre code)</span>
+    </div>
+    <figcaption>Les modèles extraient et rédigent. Toutes les décisions chiffrées (ça rentre ou pas, quantités, choix, budget, dates) sont prises par <code>marcel_core</code>.
+      Les objets 3D sont générés une fois par produit, en dehors du parcours, pour ne pas dépendre du quota GPU gratuit pendant une démo.</figcaption>
+  </figure>
+
+  <section>
+    <h2>Une demande, de bout en bout</h2>
+    <ol class="steps">
+      <li><h3>Comprendre</h3><p>Photo, texte libre et mesures partent vers <code>/api/comprendre</code>. Qwen3.8-27B en tire une liste de besoins ; le code fixe les tailles maximales et écarte plomberie et électricité.</p><span class="dur">1 à 5 s</span></li>
+      <li><h3>Chercher</h3><p>Après validation, <code>/api/parcours</code> lance un agent H par enseigne. L'utilisateur regarde l'agent naviguer en direct ; le front interroge le statut toutes les 30 s.</p><span class="dur">≈ 5 min</span></li>
+      <li><h3>Vérifier</h3><p><code>/api/resultat</code> récupère les réponses par <code>session_id</code>. marcel_core rejette ce qui ne rentre pas, calcule les quantités, choisit, date les travaux et contrôle le budget.</p><span class="dur">≈ 1 s</span></li>
+      <li><h3>Restituer</h3><p>Qwen rédige le guide à partir des seules données vérifiées. Le front affiche la liste, le planning, le guide et l'objet 3D à l'échelle, visible en réalité augmentée.</p><span class="dur">≈ 5 s (guide)</span></li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>Outils et modèles</h2>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Outil</th><th>Rôle</th><th>Modèle</th><th>Mesuré</th><th>État</th></tr></thead>
+        <tbody>
+          <tr><td>H Company Agents API</td><td>Naviguer sur les sites, relever prix, dimensions, stock, délai, préparer le panier</td><td><code>h/web-surfer-flash</code><br><code>holo4-35b-a3b</code></td><td class="num">72–303 s / session<br>13–54 étapes<br>0,03–0,16 crédit</td><td><span class="pill ok">en place</span></td></tr>
+          <tr><td>H Company Agents API</td><td>Même mission, pour comparer précision, temps et coût sur 5 produits</td><td><code>h/web-surfer-pro</code><br><code>holo4-27b</code></td><td class="num">comparatif du 18/11</td><td><span class="pill warn">en test</span></td></tr>
+          <tr><td>Hugging Face Inference Providers</td><td>Comprendre la photo et la demande, rédiger le guide de travaux</td><td><code>Qwen/Qwen3.8-27B</code></td><td class="num">1,3–4,4 s</td><td><span class="pill ok">en place</span></td></tr>
+          <tr><td>Hugging Face Inference Providers</td><td>Illustration « après travaux » ; jamais pour juger d'une taille (agrandit le produit ×2,5)</td><td><code>FLUX.1-Kontext-dev</code></td><td class="num">≈ 18 s</td><td><span class="pill warn">en test</span></td></tr>
+          <tr><td>Hugging Face Spaces (ZeroGPU)</td><td>Photo produit → objet 3D, remis à l'échelle par le code</td><td><code>TRELLIS v1</code> · <code>TRELLIS.2</code><br><code>Hunyuan3D-2</code></td><td class="num">12–37 s / objet</td><td><span class="pill ok">pré-généré</span></td></tr>
+          <tr><td>Supabase (Postgres)</td><td>Sessions d'agents, relevés, projets, grille des essais</td><td>—</td><td class="num">7 tables + vue</td><td><span class="pill ok">créé</span></td></tr>
+          <tr><td>Vercel</td><td>Héberger la web app et l'API (fonctions Python)</td><td>—</td><td class="num">—</td><td><span class="pill todo">aujourd'hui</span></td></tr>
+          <tr><td>GitHub</td><td>Code source, déploiement automatique vers Vercel</td><td>—</td><td class="num">—</td><td><span class="pill ok">en place</span></td></tr>
+          <tr><td>n8n</td><td>Automatisations de l'équipe (rôle à préciser)</td><td>—</td><td class="num">—</td><td><span class="pill todo">à préciser</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Règles de conception</h2>
+    <div class="rules">
+      <div><b>L'IA extrait, le code décide</b><p>Le code a rejeté les étagères de 800 mm proposées par l'agent pour une niche de 800 mm (maximum 790 mm avec la marge).</p></div>
+      <div><b>Arrêt avant le paiement</b><p>Les agents peuvent remplir un panier pour lire le délai de livraison, jamais aller jusqu'à l'adresse ou au paiement.</p></div>
+      <div><b>Pas de contournement</b><p>Sur un CAPTCHA, l'agent s'arrête en 2 ou 3 étapes et le signale. Les enseignes concernées sont écartées.</p></div>
+      <div><b>Secrets hors du code</b><p>Clés H, Hugging Face et Supabase en variables d'environnement, jamais dans le repo ni dans le front.</p></div>
+    </div>
+  </section>
+
+  <footer>Marcel · Team 15 · sources : tests du 17/11 et du 18/11 (logs, Supabase <code>executions</code> et <code>essais</code>).</footer>
+</div>

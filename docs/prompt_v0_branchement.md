@@ -45,8 +45,8 @@ Détails importants :
 
 ## `verifierSiret` (webhook n8n d'Erwan)
 
-`POST {NEXT_PUBLIC_N8N_SIRET_URL}` corps `{ "siret": "12345678900012" }`. Réponse :
-- refus : `{ "valide": false, "raison": "introuvable" | "entreprise_fermee" | "service_indisponible", "nom"? }` → messages : « SIRET introuvable », « Cette entreprise est fermée », « Vérification indisponible, réessaie dans un instant » (dans ce dernier cas, laisse continuer l'inscription) ;
+Adresse : `https://erwan222.app.n8n.cloud/webhook/verifier-siret` (à mettre dans `NEXT_PUBLIC_N8N_SIRET_URL`). `POST {NEXT_PUBLIC_N8N_SIRET_URL}` corps `{ "siret": "12345678900012" }`. Réponse :
+- refus : `{ "valide": false, "raison": "format" | "numero_invalide" | "introuvable" | "entreprise_fermee" | "service_indisponible", "nom"? }` → messages : « Le SIRET doit faire 14 chiffres », « Ce numéro de SIRET n'est pas valide, vérifie-le », « SIRET introuvable », « Cette entreprise est fermée », « Vérification indisponible, réessaie dans un instant » (dans ce dernier cas, laisse continuer l'inscription) ;
 - accepté : `{ "valide": true, "siret", "nom", "forme_juridique", "adresse", "code_activite", "libelle_activite", "batiment", "rge" }` → convertis en `Entreprise` : `activite = libelle_activite`, `code_naf = code_activite`, `est_batiment = batiment`. Si `batiment` est faux : « Marcel Pro est réservé aux professionnels du bâtiment. » Si `rge` est vrai, affiche une petite pastille « RGE ».
 
 ## À ne pas changer

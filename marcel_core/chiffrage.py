@@ -32,7 +32,8 @@ class Chantier(BaseModel):
 
 # ---------------------------------------------------------------- la réponse de l'agent (format fixe)
 class Ligne(BaseModel):
-    ref: str = Field(description="ref du produit demandé, recopiée telle quelle")
+    ref: str = Field(description="identifiant du produit DEMANDÉ (p1, p2…), recopié tel quel — jamais le code-barres")
+    reference_site: Optional[str] = Field(None, description="code-barres (EAN) ou référence du produit sur le site")
     produit: Optional[str] = Field(None, description="nom exact du produit trouvé")
     prix_eur: Optional[float] = Field(None, description="prix TTC d'une unité de vente")
     unite: Optional[str] = Field(None, description="unité de vente telle qu'affichée : 'pot de 10 L', 'paquet de 2,13 m²', 'pièce'…")
@@ -69,7 +70,9 @@ Ne crée pas de compte, ne te connecte pas, ne paie rien : on travaille sur les 
 Si tu tombes sur un CAPTCHA ou une page "accès refusé", ne le contourne pas : arrête-toi et réponds avec acces_site = bloque.
 Choisis le magasin le plus proche de {chantier.code_postal} (indique-le dans magasin).
 
-Pour CHAQUE produit ci-dessous, cherche-le, ouvre la fiche du produit le plus proche de la demande et remplis une ligne (ref recopiée telle quelle) :
+Pour CHAQUE produit ci-dessous, cherche-le, ouvre la fiche du produit le plus proche de la demande et remplis une ligne.
+IMPORTANT : dans « ref », recopie l'identifiant de la liste (p1, p2, p3…) ; le code-barres ou la référence du site va dans « reference_site ».
+Renvoie les lignes dans le même ordre que la liste. Pour chaque ligne :
 nom exact, prix TTC d'une unité de vente, unité de vente telle qu'affichée, contenance d'une unité en nombre + son unité (L, m2, pieces, kg, m),
 disponibilité en stock dans ce magasin (texte affiché), délai de livraison (texte + nombre de jours), lien de la fiche, URL de la photo.
 {fin}
@@ -90,8 +93,8 @@ def evaluer(chantier: Chantier, reponse: Optional[dict]) -> dict:
     lignes = (reponse or {}).get("lignes") or []
     vues = {l.get("ref") for l in lignes}
     return {"nb_produits_attendus": len(refs),
-            "nb_produits_corrects": sum(1 for l in lignes if l.get("ref") in refs and complete(l)),
-            "format_respecte": bool(reponse) and bool(reponse.get("acces_site")) and refs <= vues}
+            "nb_produits_corrects": sum(1 for l in lignes[:len(refs)] if complete(l)),
+            "format_respecte": bool(reponse) and bool(reponse.get("acces_site")) and (refs <= vues or len(lignes) == len(refs))}
 
 
 # ---------------------------------------------------------------- synthèse (le code compare)
@@ -100,6 +103,10 @@ def _cout(p: ProduitDemande, l: dict):
     prix = l.get("prix_eur")
     if prix is None:
         return None, None, "prix absent"
+    if p.besoin and p.unite_besoin == "pieces":
+        cont = l.get("contenance") if l.get("unite_contenance") == "pieces" and l.get("contenance") else 1
+        n = math.ceil(p.besoin / cont - 1e-9)
+        return n, round(n * prix, 2), f"{p.besoin:g} pièce(s)" + (f" ÷ lot de {cont:g}" if cont != 1 else "") + f" → {n} × {prix:.2f} €"
     if p.besoin and p.unite_besoin:
         cont, u = l.get("contenance"), l.get("unite_contenance")
         if not cont or u != p.unite_besoin:
@@ -116,8 +123,11 @@ def synthese(chantier: Chantier, releves: List[dict]) -> dict:
         rep = r.get("reponse") or {}
         if rep.get("acces_site") == "bloque":
             continue
-        for l in rep.get("lignes") or []:
+        for i, l in enumerate(rep.get("lignes") or []):
             p = next((x for x in chantier.produits if x.ref == l.get("ref")), None)
+            if p is None and i < len(chantier.produits):  # l'agent a mis le code-barres dans ref : on se fie à l'ordre
+                p = chantier.produits[i]
+                l = dict(l, reference_site=l.get("reference_site") or l.get("ref"), ref=p.ref)
             if not p or not l.get("produit"):
                 continue
             n, cout, calcul = _cout(p, l)

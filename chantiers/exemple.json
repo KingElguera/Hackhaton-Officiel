@@ -1,0 +1,21 @@
+{
+  "nom": "EXEMPLE — Chambre 10 m² : peinture + sol carrelé (à remplacer par la liste d'Erwan)",
+  "code_postal": "75011",
+  "fournisseurs": {
+    "castorama": "https://www.castorama.fr",
+    "bricorama": "https://www.bricorama.fr",
+    "bricodepot": "https://www.bricodepot.fr"
+  },
+  "produits": [
+    {"ref": "p1", "designation": "Peinture acrylique murs et plafonds blanc mat", "besoin": 6, "unite_besoin": "L"},
+    {"ref": "p2", "designation": "Sous-couche murs intérieurs blanche", "besoin": 3, "unite_besoin": "L"},
+    {"ref": "p3", "designation": "Carrelage sol grès cérame 60 x 60 cm gris", "besoin": 11, "unite_besoin": "m2"},
+    {"ref": "p4", "designation": "Colle carrelage sol intérieur sac 25 kg", "besoin": 50, "unite_besoin": "kg"},
+    {"ref": "p5", "designation": "Joint carrelage gris 5 kg", "besoin": 5, "unite_besoin": "kg"},
+    {"ref": "p6", "designation": "Plinthe carrelage ou MDF blanche", "besoin": 13, "unite_besoin": "m"},
+    {"ref": "p7", "designation": "Enduit de rebouchage pâte prêt à l'emploi", "besoin": 1, "unite_besoin": "pieces"},
+    {"ref": "p8", "designation": "Rouleau peinture murs 180 mm + monture", "besoin": 2, "unite_besoin": "pieces"},
+    {"ref": "p9", "designation": "Ruban de masquage peinture 50 m", "besoin": 3, "unite_besoin": "pieces"},
+    {"ref": "p10", "designation": "Croisillons carrelage 3 mm", "besoin": 1, "unite_besoin": "pieces"}
+  ]
+}

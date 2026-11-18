@@ -71,21 +71,25 @@ def _log(ligne: dict):
         print(json.dumps(ligne, ensure_ascii=False, default=str), flush=True)
 
 
-def demarrer(projet: Projet, enseigne: str, agent: str = AGENT) -> dict:
+def lancer(message: str, schema, max_steps: int, max_time_s: int, agent: str = AGENT, **meta) -> dict:
+    """Lance une session H quelconque et rend tout de suite son id et son lien live."""
     from hai_agents import Client
-    url = projet.enseignes[enseigne]
-    max_steps, max_time = limites(projet)
-    h = Client().start_session(agent=agent, messages=consigne(projet, url), answer_schema=Rapport,
-                               max_steps=max_steps, max_time_s=max_time, timezone="Europe/Paris")
+    h = Client().start_session(agent=agent, messages=message, answer_schema=schema,
+                               max_steps=max_steps, max_time_s=max_time_s, timezone="Europe/Paris")
     live = None
     try:
         live = h.get().agent_view_url
     except Exception:
         pass
-    _log({"ts": datetime.now(timezone.utc).isoformat(), "type": "lancement", "projet": projet.nom,
-          "enseigne": enseigne, "agent": agent, "session_id": h.id, "replay_url": live})
-    return {"enseigne": enseigne, "session_id": h.id, "live_url": live, "agent": agent,
-            "lance_le": datetime.now(timezone.utc).isoformat()}
+    lance_le = datetime.now(timezone.utc).isoformat()
+    _log({"ts": lance_le, "type": "lancement", "agent": agent, "session_id": h.id, "replay_url": live, **meta})
+    return {**meta, "session_id": h.id, "live_url": live, "agent": agent, "lance_le": lance_le}
+
+
+def demarrer(projet: Projet, enseigne: str, agent: str = AGENT) -> dict:
+    max_steps, max_time = limites(projet)
+    return lancer(consigne(projet, projet.enseignes[enseigne]), Rapport, max_steps, max_time, agent,
+                  enseigne=enseigne, projet=projet.nom)
 
 
 def statut(session_id: str) -> dict:
@@ -118,8 +122,8 @@ def _metrics(events):
     return dernier
 
 
-def recuperer(enseigne: str, session_id: str, lance_le: Optional[str] = None) -> dict:
-    """Résultat d'une session terminée, normalisé avec le schéma Rapport."""
+def recuperer(enseigne: str, session_id: str, lance_le: Optional[str] = None, schema=Rapport) -> dict:
+    """Résultat d'une session terminée, normalisé avec le schéma donné (Rapport par défaut)."""
     from hai_agents import Client
     h = Client().session(session_id)
     res = h.wait_for_completion()
@@ -130,9 +134,9 @@ def recuperer(enseigne: str, session_id: str, lance_le: Optional[str] = None) ->
         try:
             ans = json.loads(ans)
         except json.JSONDecodeError:
-            ans = {"acces_site": "partiel", "commentaire": ans[:500], "produits": []}
+            ans = {"acces_site": "partiel", "commentaire": ans[:500]}
     try:
-        ans = Rapport.model_validate(ans).model_dump()
+        ans = schema.model_validate(ans).model_dump()
     except Exception:
         pass
     m = _metrics(res.events)

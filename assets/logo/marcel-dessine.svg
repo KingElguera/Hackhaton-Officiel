@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 150" role="img" aria-label="Marcel dessine"><title>Marcel dessine</title><style>.head,.eyes,.loupe,.crayon{transform-box:fill-box;transform-origin:center}
+.crayon{animation:tracer 3s ease-in-out infinite}
+.trait{stroke-dasharray:1;animation:trait 3s ease-in-out infinite}
+.eyes{animation:regard 3s ease-in-out infinite}
+@keyframes tracer{0%{transform:translateX(-84px)}70%,88%{transform:none}100%{transform:translateX(-84px)}}
+@keyframes trait{0%{stroke-dashoffset:1;opacity:1}70%,85%{stroke-dashoffset:0;opacity:1}95%,100%{stroke-dashoffset:0;opacity:0}}
+@keyframes regard{0%,100%{transform:translate(-2.5px,2px)}70%,88%{transform:translate(2.5px,2px)}}@media (prefers-reduced-motion:reduce){*{animation:none!important}}</style><g transform="translate(34 0) scale(.78)"><g class="head">
+<path fill="#1F2A44" d="M23 43c-7-10-8-22-3-30 9 1 18 8 23 17 11-4 23-4 34 0 5-9 14-16 23-17 5 8 4 20-3 30 6 7 10 15 11 23l9 8c-7 2-12 5-16 9-10 14-25 22-41 22s-31-8-41-22c-4-4-9-7-16-9l9-8c1-8 5-16 11-23z"/>
+<path fill="#FBF6EE" d="M8 70C20 49 45 45 60 59 75 45 100 49 112 70 99 58 76 56 62 68H58C44 56 21 58 8 70z"/>
+<path fill="#FBF6EE" d="M60 62C55 70 54 80 45 93L37 120H83L75 93C66 80 65 70 60 62z"/>
+<ellipse fill="#1F2A44" cx="60" cy="95" rx="8" ry="5.5"/>
+<g class="eyes"><circle fill="#FBF6EE" cx="39" cy="76" r="5.2"/><circle fill="#FBF6EE" cx="81" cy="76" r="5.2"/></g>
+</g></g><path class="trait" pathLength="1" d="M38 140H122" fill="none" stroke="#B8501C" stroke-width="4" stroke-linecap="round"/><g class="crayon"><g transform="translate(122 140) rotate(32)"><path fill="#1F2A44" d="M-6 -12h12v48a6 6 0 0 1-12 0z" transform="translate(0 -52)"/><rect x="-6" y="-26" width="12" height="5" fill="#FBF6EE"/><rect x="-6" y="-38" width="12" height="5" fill="#FBF6EE"/><rect x="-6" y="-50" width="12" height="5" fill="#FBF6EE"/><path fill="#B8501C" d="M-6 -12h12L0 0z"/><path fill="#1F2A44" d="M-2.4 -4.8h4.8L0 0z"/></g></g></svg>

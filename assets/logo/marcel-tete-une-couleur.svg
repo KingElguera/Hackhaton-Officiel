@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="Marcel Pro, une couleur"><title>Marcel Pro, une couleur</title><g class="head">
+<path fill="#000000" d="M23 43c-7-10-8-22-3-30 9 1 18 8 23 17 11-4 23-4 34 0 5-9 14-16 23-17 5 8 4 20-3 30 6 7 10 15 11 23l9 8c-7 2-12 5-16 9-10 14-25 22-41 22s-31-8-41-22c-4-4-9-7-16-9l9-8c1-8 5-16 11-23z"/>
+<path fill="#FFFFFF" d="M8 70C20 49 45 45 60 59 75 45 100 49 112 70 99 58 76 56 62 68H58C44 56 21 58 8 70z"/>
+<path fill="#FFFFFF" d="M60 62C55 70 54 80 45 93L37 120H83L75 93C66 80 65 70 60 62z"/>
+<ellipse fill="#000000" cx="60" cy="95" rx="8" ry="5.5"/>
+<g class="eyes"><circle fill="#FFFFFF" cx="39" cy="76" r="5.2"/><circle fill="#FFFFFF" cx="81" cy="76" r="5.2"/></g>
+</g></svg>

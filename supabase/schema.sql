@@ -122,7 +122,7 @@ create table if not exists public.essais (
 );
 
 -- ------------------------------------------------------------------ grille de comparaison des agents
-create or replace view public.grille_agents as
+create or replace view public.grille_agents with (security_invoker = true) as
 select e.created_at, e.fournisseur_id, e.agent, s.nom as skill,
        e.nb_produits_corrects, e.nb_produits_attendus,
        e.duree_s, e.etapes, e.cout_credits, e.format_respecte, e.statut, e.live_url

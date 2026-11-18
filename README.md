@@ -11,8 +11,15 @@ L'agent s'arrête toujours avant le paiement.
 ```bash
 brew install uv            # une fois
 uv sync                    # installe les dépendances (Python 3.12)
+uv sync --group outils     # + outils 3D / images (scripts test3d, bench3d, insertion)
 ```
 Clés dans les variables d'environnement, **jamais dans le repo** : `HAI_API_KEY` (H Company), `HF_TOKEN` (Hugging Face, preset Inference).
+
+## Back en ligne (API pour le front)
+- Code : `api/index.py` (FastAPI, fonctions Python Vercel) + `marcel_core/` (cœur partagé).
+- Contrat front ↔ back : **[docs/API_FRONT.md](docs/API_FRONT.md)**.
+- Lancer en local : `uv run uvicorn api.index:app --port 8787` puis `curl localhost:8787/api/sante`.
+- Vercel : variables d'environnement `HAI_API_KEY` et `HF_TOKEN` à saisir dans le projet Vercel (jamais dans le code).
 
 ## Scripts
 | Commande | Rôle |
@@ -22,9 +29,9 @@ Clés dans les variables d'environnement, **jamais dans le repo** : `HAI_API_KEY
 | `uv run marcel.py --rejouer out/<date>` | recalcule sans relancer d'agent |
 | `uv run hf_test.py plan out/<date>` | guide de travaux rédigé par Hugging Face |
 | `uv run hf_test.py photo <image>` | description de la photo de la pièce |
-| `uv run test3d.py test3d/etagere.jpg --modele trellis` | objet 3D du produit, remis à l'échelle, posé dans la niche |
-| `uv run bench3d.py test3d/etagere.jpg` | comparatif des modèles image → 3D |
-| `uv run insertion.py` | test d'insertion du produit dans la photo |
+| `uv run --group outils test3d.py test3d/etagere.jpg --modele trellis` | objet 3D du produit, remis à l'échelle, posé dans la niche |
+| `uv run --group outils bench3d.py test3d/etagere.jpg` | comparatif des modèles image → 3D |
+| `uv run --group outils insertion.py` | test d'insertion du produit dans la photo |
 
 ## Résultats et retours sur l'API
 Voir **[RETOURS.md](RETOURS.md)** : accès des enseignes, parcours complet, Hugging Face, comparatif 3D, insertion photo, retours sur l'Agent API.

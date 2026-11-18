@@ -298,6 +298,8 @@ def _finaliser(p: dict) -> dict:
                 "visuel": {"avant_url": None, "apres_url": None}}
     try:  # trace dans executions / releves (grille des agents)
         from chiffrage import enregistrer_session
+        base.inserer("fournisseurs", [{"id": f, "nom": f.capitalize(), "url": u} for f, u in ch.FOURNISSEURS_DEFAUT.items()],
+                     conflit="id", ignorer_doublons=True)  # un fournisseur absent de la table bloquerait l'écriture
         skill = base.skill_id("releve_prix")
         for s in sessions:
             if s.get("session_id"):

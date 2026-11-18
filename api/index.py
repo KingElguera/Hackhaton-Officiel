@@ -33,6 +33,18 @@ app.add_middleware(CORSMiddleware, allow_origins=os.environ.get("FRONT_ORIGINS",
                    allow_methods=["*"], allow_headers=["*"])
 
 
+@app.middleware("http")
+async def erreurs_lisibles(request, call_next):
+    """Une erreur imprévue renvoie un JSON lisible par le site (avec l'en-tête CORS), au lieu d'une page 500 muette."""
+    from fastapi.responses import JSONResponse
+    try:
+        return await call_next(request)
+    except Exception as e:  # noqa: BLE001
+        print(f"ERREUR {request.method} {request.url.path} : {type(e).__name__}: {e}", flush=True)
+        return JSONResponse({"detail": f"Erreur interne de Marcel : {type(e).__name__}"}, status_code=500,
+                            headers={"Access-Control-Allow-Origin": "*"})
+
+
 class DemandeComprendre(BaseModel):
     texte: str = Field(..., min_length=3, description="ce que l'utilisateur veut faire")
     code_postal: str
@@ -226,8 +238,9 @@ def creer_chantier(d: DemandeChantier):
         if not f.get(k):
             raise HTTPException(400, f"{k} manquant : les dimensions ne peuvent pas être déléguées")
     photos, plan = f.pop("photos", []) or [], f.pop("plan", None)
-    for k in ("photos_inspiration", "photos_meubles"):
-        f[k] = len(f.get(k) or [])
+    for k in ("photos_inspiration", "photos_meubles"):  # le front peut envoyer la liste ou seulement le nombre
+        v = f.get(k)
+        f[k] = v if isinstance(v, int) else len(v or [])
     f["nb_photos"], f["plan_fourni"] = len(photos), bool(plan)
     try:
         analyse = __import__("marcel_core.hf", fromlist=["lire_chantier"]).lire_chantier(f, photos, plan)

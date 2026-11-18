@@ -82,7 +82,8 @@ class DemandeRendu(BaseModel):
     sol: SolRendu = Field(default_factory=SolRendu)
     ouvertures: List[OuvertureRendu] = Field(default_factory=list)
     meubles: List[MeubleRendu] = Field(default_factory=list, max_length=6)
-    vues: List[Literal["photo1", "photo2", "dessus", "panorama"]] = Field(default_factory=lambda: ["photo1", "photo2", "dessus", "panorama"])
+    vues: List[Literal["photo1", "photo2", "dessus", "panorama", "maquette"]] = Field(
+        default_factory=lambda: ["photo1", "photo2", "dessus", "panorama", "maquette"])
     qualite: Literal["rapide", "finale"] = "rapide"
 
 
@@ -253,7 +254,8 @@ def noter_visuel(projet_id: str, rendu_id: str, etat: str, images: Optional[list
     visuel = dict(resultat.get("visuel") or {})
     urls = {i["fichier"]: i.get("url") for i in images or []}
     visuel.update(rendu_id=rendu_id, etat=etat, images=images or [], apres_url=urls.get("photo1.png") or visuel.get("apres_url"),
-                  panorama_url=urls.get("panorama_360.jpg"), dessus_url=urls.get("dessus.png"))
+                  panorama_url=urls.get("panorama_360.jpg"), dessus_url=urls.get("dessus.png"),
+                  maquette_url=urls.get("maquette.glb"))
     if alertes is not None:
         visuel["alertes"] = alertes
     resultat["visuel"] = visuel

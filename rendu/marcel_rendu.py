@@ -233,7 +233,7 @@ def rendre(nom, largeur, hauteur, echantillons, jpeg=False):
     bpy.ops.render.render(write_still=True)
     return {"fichier": os.path.basename(f), "secondes": round(time.time() - t, 1)}
 
-vues = cfg.get("vues", ["photo1", "photo2", "dessus", "panorama"])
+vues = cfg.get("vues", ["photo1", "photo2", "dessus", "panorama", "maquette"])
 res = (1600, 1000, 64) if finale else (1120, 700, 32)
 fichiers = []
 marge = 0.3
@@ -263,4 +263,68 @@ if "panorama" in vues:
     fichiers.append(rendre("panorama_360.jpg", *((4096, 2048, 48) if finale else (2048, 1024, 24)), jpeg=True))
 
 bpy.ops.wm.save_as_mainfile(filepath=os.path.join(sortie, "scene.blend"))
+
+def exporter_maquette(chemin):
+    """Maquette 3D à faire tourner dans le site (fichier .glb) : la même pièce, vue en « maison de poupée ».
+    Sans plafond ; les murs perdent leur face extérieure, donc on voit l'intérieur depuis n'importe quel côté ;
+    le sol calculé par Blender est « cuit » dans une image, seul format qu'un fichier 3D sait transporter."""
+    from mathutils import Vector
+    import bmesh
+    dg = bpy.context.evaluated_depsgraph_get()
+    garder = []
+    for o in list(sc.objects):
+        if o.type != "MESH" or not o.visible_get() or o.name.startswith(("plafond", "dehors", "trou")):
+            continue
+        me = bpy.data.meshes.new_from_object(o.evaluated_get(dg))  # trous des portes et fenêtres appliqués
+        n = bpy.data.objects.new(o.name + "_maquette", me); n.matrix_world = o.matrix_world.copy()
+        sc.collection.objects.link(n); garder.append(n)
+    for o in garder:
+        if not o.name.startswith("mur_"):
+            continue
+        bm = bmesh.new(); bm.from_mesh(o.data)
+        mw = o.matrix_world; rot = mw.to_3x3()
+        dehors = []
+        for f in bm.faces:
+            nrm = (rot @ f.normal).normalized(); c = mw @ f.calc_center_median()
+            v = Vector((c.x, c.y, 0))  # la pièce est centrée sur l'origine
+            if v.length > 1e-6 and abs(nrm.z) < 0.5 and nrm.dot(v.normalized()) > 0.5:
+                dehors.append(f)
+        bmesh.ops.delete(bm, geom=dehors, context="FACES"); bm.to_mesh(o.data); bm.free()
+    for m in bpy.data.materials:
+        m.use_backface_culling = True
+    sols = [o for o in garder if o.name.startswith("sol")]
+    if sols:
+        s = sols[0]
+        bpy.ops.object.select_all(action="DESELECT"); s.select_set(True); bpy.context.view_layer.objects.active = s
+        bpy.ops.object.mode_set(mode="EDIT"); bpy.ops.mesh.select_all(action="SELECT")
+        bpy.ops.uv.cube_project(cube_size=max(W, D)); bpy.ops.object.mode_set(mode="OBJECT")
+        for slot in s.material_slots:
+            m = slot.material
+            if not (m and m.use_nodes):
+                continue
+            nt = m.node_tree
+            img = bpy.data.images.new("sol_cuit", 2048, 2048)
+            noeud = nt.nodes.new("ShaderNodeTexImage"); noeud.image = img; nt.nodes.active = noeud
+            sc.cycles.samples = 4
+            bpy.ops.object.bake(type="DIFFUSE", pass_filter={"COLOR"}, margin=4)
+            b = next((n for n in nt.nodes if n.type == "BSDF_PRINCIPLED"), None)
+            if b:
+                for l in list(b.inputs["Base Color"].links):
+                    nt.links.remove(l)
+                nt.links.new(noeud.outputs["Color"], b.inputs["Base Color"])
+            img.pack()
+    bpy.ops.object.select_all(action="DESELECT")
+    for o in garder:
+        o.select_set(True)
+    bpy.ops.export_scene.gltf(filepath=chemin, export_format="GLB", use_selection=True, export_apply=True,
+                              export_cameras=False, export_lights=False, export_image_format="JPEG")
+
+if "maquette" in vues:
+    t = time.time()
+    try:
+        exporter_maquette(os.path.join(sortie, "maquette.glb"))
+        fichiers.append({"fichier": "maquette.glb", "secondes": round(time.time() - t, 1)})
+    except Exception as e:  # la maquette est un bonus : son échec ne bloque pas les images
+        print(f"MAQUETTE ECHEC {type(e).__name__}: {e}")
+
 print("RESULTAT " + json.dumps({"images": fichiers, "meubles": meubles_poses, "total_secondes": round(time.time() - t0, 1)}, ensure_ascii=False))

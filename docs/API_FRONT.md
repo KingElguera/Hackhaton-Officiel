@@ -219,3 +219,16 @@ Il faut que la table `rendus` existe (`supabase/rendus.sql`) et qu'un atelier to
 - `alertes` : cote illisible, surface incohérente, hauteur absente…
 
 Rien n'est enregistré par cet appel. Le site pré-remplit les champs, l'artisan vérifie et valide : les chiffres restent les siens.
+
+## Dicter un chantier
+
+`POST /api/dictee` avec `{"audio": "data:audio/webm;base64,..."}` (ce que donne `MediaRecorder` dans le navigateur, 2 minutes maximum)
+ou `{"texte": "..."}` si le texte est déjà transcrit. Réponse en 5 à 10 secondes :
+
+- `texte` : ce que Marcel a entendu, à afficher pour que l'artisan se relise ;
+- `fiche` : les champs reconnus (`nom`, `piece`, `code_postal`, `longueur_m`, `largeur_m`, `hauteur_m`, `nb_portes`, `nb_fenetres`, `etat_murs`, `postes`, `budget_client_eur`, `notes`), au même format que la fiche de `POST /api/chantiers` ;
+- `manquants` : ce qui n'a pas été dit, avec la question à poser (`{"champ": "hauteur_m", "question": "Quelle hauteur sous plafond ?"}`) ;
+- `alertes` : valeur dictée inhabituelle, à saisir à la main.
+
+Rien n'est enregistré par cet appel. Le site pré-remplit le formulaire, l'artisan corrige et valide.
+Ce qui n'est pas dit reste vide : Marcel ne complète jamais une dimension de lui-même.

@@ -12,6 +12,10 @@
 # Convention pour "position" (ouvertures et meubles) : distance en mètres entre le coin gauche
 # du mur et le bord gauche de l'élément, quand on regarde ce mur depuis l'intérieur de la pièce.
 # Murs : "fond", "avant", "gauche", "droit". La caméra des photos est côté "avant".
+#
+# Pièce non rectangulaire (en L, en U…) : donner "contour", la liste des angles [x, y] en mètres, murs à angle droit,
+# et "murs_noms", le nom de chaque mur dans l'ordre (le mur i va de l'angle i à l'angle i+1). Sans "murs_noms" : mur1, mur2…
+# "sol_pose": "chevron" pose le parquet en chevron. "papier_peint": {"nom du mur": {"image": ..., "largeur_m": ...}}.
 
 import bpy, sys, json, math, os, time
 from mathutils import Vector
@@ -34,8 +38,18 @@ def chemin(p):
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
 sc = bpy.context.scene
-W, D, H = float(cfg["largeur"]), float(cfg["profondeur"]), float(cfg["hauteur"])
+H = float(cfg["hauteur"])
 E = 0.1  # épaisseur des murs
+CONTOUR = None   # pièce non rectangulaire : les angles, recentrés sur l'origine
+if cfg.get("contour"):
+    _p = [(float(x), float(y)) for x, y in cfg["contour"]]
+    _cx = (min(x for x, _ in _p) + max(x for x, _ in _p)) / 2; _cy = (min(y for _, y in _p) + max(y for _, y in _p)) / 2
+    CONTOUR = [(x - _cx, y - _cy) for x, y in _p]
+    W = max(x for x, _ in CONTOUR) * 2; D = max(y for _, y in CONTOUR) * 2   # l'encombrement de la pièce
+    _n = len(CONTOUR)
+    SENS = 1 if sum(CONTOUR[i][0] * CONTOUR[(i + 1) % _n][1] - CONTOUR[(i + 1) % _n][0] * CONTOUR[i][1] for i in range(_n)) > 0 else -1
+else:
+    W, D = float(cfg["largeur"]), float(cfg["profondeur"])
 
 # ---------- petits outils
 
@@ -66,12 +80,28 @@ def boite(nom, taille, centre, m=None):
 
 # Pour chaque mur : son centre, l'axe le long du mur, la normale vers l'intérieur,
 # et la position du coin gauche vu de l'intérieur.
+# "rallonge" : de combien le mur dépasse à gauche et à droite pour fermer les angles.
 MURS = {
-    "fond":   dict(centre=Vector((0, D / 2 + E / 2, 0)),  le_long=Vector((1, 0, 0)),  dedans=Vector((0, -1, 0)), longueur=W),
-    "avant":  dict(centre=Vector((0, -D / 2 - E / 2, 0)), le_long=Vector((-1, 0, 0)), dedans=Vector((0, 1, 0)),  longueur=W),
-    "gauche": dict(centre=Vector((-W / 2 - E / 2, 0, 0)), le_long=Vector((0, 1, 0)),  dedans=Vector((1, 0, 0)),  longueur=D),
-    "droit":  dict(centre=Vector((W / 2 + E / 2, 0, 0)),  le_long=Vector((0, -1, 0)), dedans=Vector((-1, 0, 0)), longueur=D),
+    "fond":   dict(centre=Vector((0, D / 2 + E / 2, 0)),  le_long=Vector((1, 0, 0)),  dedans=Vector((0, -1, 0)), longueur=W, rallonge=(E, E)),
+    "avant":  dict(centre=Vector((0, -D / 2 - E / 2, 0)), le_long=Vector((-1, 0, 0)), dedans=Vector((0, 1, 0)),  longueur=W, rallonge=(E, E)),
+    "gauche": dict(centre=Vector((-W / 2 - E / 2, 0, 0)), le_long=Vector((0, 1, 0)),  dedans=Vector((1, 0, 0)),  longueur=D, rallonge=(0, 0)),
+    "droit":  dict(centre=Vector((W / 2 + E / 2, 0, 0)),  le_long=Vector((0, -1, 0)), dedans=Vector((-1, 0, 0)), longueur=D, rallonge=(0, 0)),
 }
+if CONTOUR:
+    # Un mur par côté du contour. Vu de l'intérieur, le mur se lit de gauche à droite dans le sens inverse du tracé.
+    MURS = {}
+    noms = cfg.get("murs_noms") or ["mur%d" % (i + 1) for i in range(_n)]
+    def _saillant(i):
+        """Vrai si l'angle i est un angle « normal » de pièce (90° vu de l'intérieur), faux si c'est un angle rentrant."""
+        a, b, c = Vector(CONTOUR[i - 1]), Vector(CONTOUR[i]), Vector(CONTOUR[(i + 1) % _n])
+        return (b - a).cross(c - b) * SENS > 0
+    for i in range(_n):
+        a, b = Vector(CONTOUR[i]), Vector(CONTOUR[(i + 1) % _n]); u = (b - a).normalized()
+        dedans = Vector((-u.y, u.x, 0)) * SENS; le_long = Vector((u.x, u.y, 0)) * -SENS
+        milieu = (a + b) / 2
+        g, d = ((i + 1) % _n, i) if SENS > 0 else (i, (i + 1) % _n)   # l'angle à gauche et l'angle à droite, vus de l'intérieur
+        MURS[noms[i]] = dict(centre=Vector((milieu.x, milieu.y, 0)) - dedans * (E / 2), le_long=le_long, dedans=dedans,
+                             longueur=(b - a).length, rallonge=(E if _saillant(g) else -0.002, E if _saillant(d) else -0.002))   # angle rentrant : un cheveu en retrait, sinon deux faces se superposent
 
 def point_sur_mur(mur, position, largeur):
     """Centre, sur l'axe du mur, d'un élément dont le bord gauche est à `position` du coin gauche."""
@@ -79,7 +109,61 @@ def point_sur_mur(mur, position, largeur):
     return m["centre"] + m["le_long"] * (-m["longueur"] / 2 + position + largeur / 2)
 
 def taille_selon_mur(mur, le_long, travers, haut):
-    return (le_long, travers, haut) if mur in ("fond", "avant") else (travers, le_long, haut)
+    return (le_long, travers, haut) if abs(MURS[mur]["le_long"].x) > 0.5 else (travers, le_long, haut)
+
+def dans_la_piece(x, y):
+    """Vrai si le point est à l'intérieur du contour (ou du rectangle)."""
+    if not CONTOUR:
+        return abs(x) < W / 2 and abs(y) < D / 2
+    dedans = False
+    for i in range(_n):
+        (x1, y1), (x2, y2) = CONTOUR[i], CONTOUR[(i + 1) % _n]
+        if (y1 > y) != (y2 > y) and x < x1 + (y - y1) * (x2 - x1) / (y2 - y1):
+            dedans = not dedans
+    return dedans
+
+def plaque(nom, z, m):
+    """Sol ou plafond d'une pièce non rectangulaire : une face qui suit le contour."""
+    me = bpy.data.meshes.new(nom)
+    me.from_pydata([(x, y, z) for x, y in CONTOUR], [], [list(range(_n)) if SENS > 0 else list(range(_n - 1, -1, -1))]); me.update()
+    o = bpy.data.objects.new(nom, me); sc.collection.objects.link(o); o.data.materials.append(m)
+    return o
+
+def noeud_calcul(nt, operation, a, b=None):
+    """Un nœud de calcul ; a et b sont une sortie de nœud ou un nombre."""
+    n = nt.nodes.new("ShaderNodeMath"); n.operation = operation
+    for i, v in enumerate((a, b)):
+        if v is None: continue
+        if isinstance(v, (int, float)): n.inputs[i].default_value = v
+        else: nt.links.new(v, n.inputs[i])
+    return n.outputs[0]
+
+def melange(nt, facteur, a, b):
+    """Mélange de deux couleurs ; a et b sont une sortie de nœud ou une couleur."""
+    n = nt.nodes.new("ShaderNodeMix"); n.data_type = "RGBA"
+    e = {i.identifier: i for i in n.inputs}
+    for cle, v in (("Factor_Float", facteur), ("A_Color", a), ("B_Color", b)):
+        if isinstance(v, (int, float, tuple)): e[cle].default_value = v
+        else: nt.links.new(v, e[cle])
+    return next(o for o in n.outputs if o.identifier == "Result_Color")
+
+def papier_peint(nom, mur, reglage):
+    """Un mur tapissé : l'image du motif, répétée à sa taille réelle le long du mur."""
+    if isinstance(reglage, str): reglage = {"image": reglage}
+    m = bpy.data.materials.new("papier_" + nom); m.use_nodes = True
+    nt = m.node_tree; b = bsdf(m); b.inputs["Roughness"].default_value = 0.9
+    img = bpy.data.images.load(chemin(reglage["image"]))
+    k = 1.0 / float(reglage.get("largeur_m", 1.0))
+    geo = nt.nodes.new("ShaderNodeNewGeometry")
+    pv = nt.nodes.new("ShaderNodeVectorMath"); pv.operation = "DOT_PRODUCT"
+    nt.links.new(geo.outputs["Position"], pv.inputs[0]); pv.inputs[1].default_value = tuple(MURS[mur]["le_long"])
+    sep = nt.nodes.new("ShaderNodeSeparateXYZ"); nt.links.new(geo.outputs["Position"], sep.inputs[0])
+    comb = nt.nodes.new("ShaderNodeCombineXYZ")
+    nt.links.new(noeud_calcul(nt, "MULTIPLY", pv.outputs["Value"], k), comb.inputs[0])
+    nt.links.new(noeud_calcul(nt, "MULTIPLY", sep.outputs["Z"], k * img.size[0] / max(img.size[1], 1)), comb.inputs[1])
+    it = nt.nodes.new("ShaderNodeTexImage"); it.image = img
+    nt.links.new(comb.outputs[0], it.inputs["Vector"]); nt.links.new(it.outputs["Color"], b.inputs["Base Color"])
+    return m
 
 # ---------- matières
 
@@ -91,7 +175,25 @@ sol_m = bpy.data.materials.new("sol"); sol_m.use_nodes = True
 nt = sol_m.node_tree; b = bsdf(sol_m); b.inputs["Roughness"].default_value = 0.45
 tc = nt.nodes.new("ShaderNodeTexCoord"); mp = nt.nodes.new("ShaderNodeMapping")
 nt.links.new(tc.outputs["Object"], mp.inputs["Vector"])
-if cfg.get("sol_image"):
+if cfg.get("sol_pose") == "chevron" and not cfg.get("sol_image"):
+    # Parquet en chevron (point de Hongrie) : des travées de lames coupées à 45°, qui se rejoignent en pointe.
+    teintes = cfg.get("sol", ["#B98A5A", "#8E6238"])
+    trav = float(cfg.get("chevron_travee_m", 0.42)); pas = float(cfg.get("chevron_lame_m", 0.09)) / math.cos(math.radians(45))
+    geo = nt.nodes.new("ShaderNodeNewGeometry"); sep = nt.nodes.new("ShaderNodeSeparateXYZ")
+    nt.links.new(geo.outputs["Position"], sep.inputs[0])
+    fx = noeud_calcul(nt, "DIVIDE", sep.outputs["X"], trav)
+    zig = noeud_calcul(nt, "MULTIPLY", noeud_calcul(nt, "PINGPONG", fx, 1.0), trav)          # monte puis descend d'une travée à l'autre
+    v = noeud_calcul(nt, "DIVIDE", noeud_calcul(nt, "ADD", sep.outputs["Y"], zig), pas)
+    comb = nt.nodes.new("ShaderNodeCombineXYZ")
+    nt.links.new(noeud_calcul(nt, "FLOOR", v), comb.inputs[0]); nt.links.new(noeud_calcul(nt, "FLOOR", fx), comb.inputs[1])
+    hasard = nt.nodes.new("ShaderNodeTexWhiteNoise"); hasard.noise_dimensions = "2D"; nt.links.new(comb.outputs[0], hasard.inputs["Vector"])
+    bois = melange(nt, hasard.outputs["Value"], rgb(teintes[0]), rgb(teintes[1]))
+    def joint(val, demi):   # 1 près d'un bord de lame, 0 ailleurs
+        return noeud_calcul(nt, "GREATER_THAN", noeud_calcul(nt, "ABSOLUTE", noeud_calcul(nt, "SUBTRACT", noeud_calcul(nt, "FRACT", val), 0.5)), 0.5 - demi)
+    joints = noeud_calcul(nt, "MAXIMUM", joint(v, 0.012), joint(fx, 0.004))
+    sombre = tuple(c * 0.35 for c in rgb(teintes[1])[:3]) + (1.0,)
+    nt.links.new(melange(nt, joints, bois, sombre), b.inputs["Base Color"])
+elif cfg.get("sol_image"):
     # La photo du produit, répétée à sa taille réelle.
     it = nt.nodes.new("ShaderNodeTexImage"); it.image = bpy.data.images.load(chemin(cfg["sol_image"]))
     k = 1.0 / float(cfg.get("sol_image_taille_m", 2.0))
@@ -107,14 +209,21 @@ else:
 
 # ---------- la pièce
 
-boite("sol", (W, D, 0.05), (0, 0, -0.025), sol_m)
-plafond = boite("plafond", (W + 2 * E, D + 2 * E, 0.05), (0, 0, H + 0.025), plafond_m)
+if CONTOUR:
+    plaque("sol", 0.0, sol_m); plafond = plaque("plafond", H, plafond_m)
+else:
+    boite("sol", (W, D, 0.05), (0, 0, -0.025), sol_m)
+    plafond = boite("plafond", (W + 2 * E, D + 2 * E, 0.05), (0, 0, H + 0.025), plafond_m)
 murs = {}
 for nom, m in MURS.items():
-    long_ = m["longueur"] + (2 * E if nom in ("fond", "avant") else 0)
+    rg, rd = m["rallonge"]
+    long_ = m["longueur"] + rg + rd
+    cm = m["centre"] + m["le_long"] * ((rd - rg) / 2)
     teinte_mur = cfg.get("peinture_murs", {}).get(nom)   # mur d'accent : sa propre couleur
     m_mur = matiere("peinture_" + nom, teinte_mur, 0.85) if teinte_mur else peinture
-    murs[nom] = boite("mur_" + nom, taille_selon_mur(nom, long_, E, H), (m["centre"].x, m["centre"].y, H / 2), m_mur)
+    if cfg.get("papier_peint", {}).get(nom):
+        m_mur = papier_peint(nom, nom, cfg["papier_peint"][nom])
+    murs[nom] = boite("mur_" + nom, taille_selon_mur(nom, long_, E, H), (cm.x, cm.y, H / 2), m_mur)
     c = m["centre"] + m["dedans"] * (E / 2 + 0.0075)
     boite("plinthe_" + nom, taille_selon_mur(nom, m["longueur"], 0.015, 0.08), (c.x, c.y, 0.04), blanc)
 
@@ -169,6 +278,8 @@ def boite_englobante(objs):
     return Vector((min(p.x for p in pts), min(p.y for p in pts), min(p.z for p in pts))), Vector((max(p.x for p in pts), max(p.y for p in pts), max(p.z for p in pts)))
 
 ANGLE = {"fond": 0.0, "avant": math.pi, "gauche": math.pi / 2, "droit": -math.pi / 2}
+def angle_du_mur(mur):
+    return ANGLE[mur] if mur in ANGLE else math.atan2(MURS[mur]["dedans"].x, -MURS[mur]["dedans"].y)
 meubles_poses = []
 emprises = []   # empreinte au sol de chaque meuble (x0, y0, x1, y1) : la caméra s'en écarte
 for i, f in enumerate(cfg.get("meubles", [])):
@@ -182,7 +293,7 @@ for i, f in enumerate(cfg.get("meubles", [])):
         for o in nouveaux:
             if o.parent is None: o.parent = pivot
         mur = f.get("mur", "fond"); m = MURS[mur]
-        pivot.rotation_euler = (0, 0, ANGLE[mur] + math.radians(float(f.get("rotation", 0))))
+        pivot.rotation_euler = (0, 0, angle_du_mur(mur) + math.radians(float(f.get("rotation", 0))))
         lo, hi = boite_englobante(nouveaux)
         etendue = abs((hi - lo).dot(m["le_long"]))
         if f.get("largeur_m") and etendue > 0:
@@ -208,13 +319,28 @@ for i, f in enumerate(cfg.get("meubles", [])):
     else:
         # Pas de modèle ni de mur : un volume simple placé par ses coordonnées.
         sx, sy, sz = f["taille"]; z = f.get("z", 0.0)
-        boite(f.get("nom", "meuble_%d" % i), (sx, sy, sz), (f["pos"][0], f["pos"][1], z + sz / 2), matiere("m_%d" % i, f.get("couleur", "#E9E4DA"), 0.6))
+        px, py = (f["pos"][0] - _cx, f["pos"][1] - _cy) if CONTOUR else f["pos"]   # avec un contour, la position se lit dans le repère du plan
+        boite(f.get("nom", "meuble_%d" % i), (sx, sy, sz), (px, py, z + sz / 2), matiere("m_%d" % i, f.get("couleur", "#E9E4DA"), 0.6))
+        if CONTOUR:
+            emprises.append((px - sx / 2, py - sy / 2, px + sx / 2, py + sy / 2, z + sz))
 
 # ---------- lumière
 
 pl = bpy.data.lights.new("plafonnier", "AREA"); pl.size = 1.0; pl.color = (1.0, 0.94, 0.86)
 pl.energy = 35 if n_fenetres else 110
 plo = bpy.data.objects.new("plafonnier", pl); plo.location = (0, 0, H - 0.08); sc.collection.objects.link(plo)
+GRILLE = []   # des points répartis dans la pièce : ils servent à placer les lumières et les caméras d'une pièce non rectangulaire
+if CONTOUR:
+    k = 0.3
+    GRILLE = [(i * k, j * k) for i in range(int(-W / 2 / k) - 1, int(W / 2 / k) + 2) for j in range(int(-D / 2 / k) - 1, int(D / 2 / k) + 2)
+              if all(dans_la_piece(i * k + dx, j * k + dy) for dx in (-0.45, 0.45) for dy in (-0.45, 0.45))]
+    _hors = [(i * 0.3, j * 0.3) for i in range(-30, 31) for j in range(-30, 31) if not dans_la_piece(i * 0.3, j * 0.3)]
+    def au_large(p):   # distance au mur le plus proche, à 0,3 m près
+        return min((math.hypot(p[0] - q[0], p[1] - q[1]) for q in _hors), default=9.0)
+    c1 = max(GRILLE, key=au_large); plo.location = (c1[0], c1[1], H - 0.08)
+    c2 = max(GRILLE, key=lambda p: math.hypot(p[0] - c1[0], p[1] - c1[1]))
+    if math.hypot(c2[0] - c1[0], c2[1] - c1[1]) > 2.5:   # une pièce en L a deux zones : une lumière dans chacune
+        pl2 = pl.copy(); o2 = bpy.data.objects.new("plafonnier_2", pl2); o2.location = (c2[0], c2[1], H - 0.08); sc.collection.objects.link(o2)
 monde = bpy.data.worlds.new("monde"); sc.world = monde; monde.use_nodes = True
 fond = next(n for n in monde.node_tree.nodes if n.type == "BACKGROUND")
 fond.inputs["Color"].default_value = (1, 1, 1, 1); fond.inputs["Strength"].default_value = 0.1
@@ -260,11 +386,31 @@ COINS = [(1, -1), (-1, -1), (1, 1), (-1, 1)]   # (signe x, signe y) : avant droi
 def score(c):
     return min(degagement(c[0] * (W / 2 - marge), c[1] * (D / 2 - marge)), 2.5)   # au-delà de 2,5 m, rien ne gêne
 coins = sorted(COINS, key=lambda c: -score(c))   # tri stable : à égalité, l'ordre par défaut est gardé
-for nom_vue, (sx, sy) in zip(["photo1", "photo2"], coins[:2]):
+prises = [((sx * (W / 2 - marge), sy * (D / 2 - marge)), (-sx * (W / 2 - 0.9), -sy * (D / 2 - 0.5))) for sx, sy in coins[:2]]
+if CONTOUR:
+    # Pièce non rectangulaire : on se place dans les angles d'où l'on voit le plus de pièce, et on vise le milieu de ce qu'on voit.
+    def visible(a, b):
+        return all(dans_la_piece(a[0] + (b[0] - a[0]) * t / 20, a[1] + (b[1] - a[1]) * t / 20) for t in range(1, 20))
+    candidats = []
+    for i in range(_n):
+        if not _saillant(i):
+            continue
+        avant_, apres_ = MURS[noms[i - 1]]["dedans"], MURS[noms[i]]["dedans"]
+        p = (CONTOUR[i][0] + (avant_.x + apres_.x) * marge, CONTOUR[i][1] + (avant_.y + apres_.y) * marge)
+        vus = [g for g in GRILLE if visible(p, g)]
+        if vus:
+            cible = (sum(g[0] for g in vus) / len(vus), sum(g[1] for g in vus) / len(vus))
+            candidats.append((len(vus) * min(degagement(*p), 2.0), p, cible))
+    candidats.sort(key=lambda c: -c[0])
+    prises = [(c[1], c[2]) for c in candidats[:1]]
+    # La seconde photo : un autre angle, le plus éloigné possible du premier tout en voyant beaucoup de pièce.
+    loin = lambda c: math.hypot(c[1][0] - prises[0][0][0], c[1][1] - prises[0][0][1])
+    prises += [(c[1], c[2]) for c in sorted(candidats[1:], key=lambda c: -c[0] * loin(c)) if loin(c) > 2.0][:1]
+for nom_vue, (pos, cible) in zip(["photo1", "photo2"], prises):
     if nom_vue not in vues:
         continue
     cam.type = "PERSP"; cam.lens = 15
-    viser((sx * (W / 2 - marge), sy * (D / 2 - marge), 1.5), (-sx * (W / 2 - 0.9), -sy * (D / 2 - 0.5), 1.05))
+    viser((pos[0], pos[1], 1.5), (cible[0], cible[1], 1.05))
     fichiers.append(rendre(nom_vue + ".png", *res))
 if "dessus" in vues:
     # Vue de dessus, sans plafond, pour montrer le calepinage du sol.
@@ -277,7 +423,7 @@ if "panorama" in vues:
     cam.type = "PANO"
     try: cam.panorama_type = "EQUIRECTANGULAR"
     except Exception: cam.cycles.panorama_type = "EQUIRECTANGULAR"
-    p = cfg.get("panorama_depuis", [0.0, -D / 4])
+    p = cfg.get("panorama_depuis", list(plo.location[:2]) if CONTOUR else [0.0, -D / 4])
     co.location = (p[0], p[1], 1.55); co.rotation_euler = (math.radians(90), 0, 0)
     fichiers.append(rendre("panorama_360.jpg", *((4096, 2048, 48) if finale else (2048, 1024, 24)), jpeg=True))
 
@@ -306,7 +452,10 @@ def exporter_maquette(chemin):
         for f in bm.faces:
             nrm = (rot @ f.normal).normalized(); c = mw @ f.calc_center_median()
             v = Vector((c.x, c.y, 0))  # la pièce est centrée sur l'origine
-            if v.length > 1e-6 and abs(nrm.z) < 0.5 and nrm.dot(v.normalized()) > 0.5:
+            if CONTOUR:   # pièce non rectangulaire : la face extérieure est celle qui tourne le dos à l'intérieur de son mur
+                if abs(nrm.z) < 0.5 and nrm.dot(MURS[o.name[len("mur_"):-len("_maquette")]]["dedans"]) < -0.5:
+                    dehors.append(f)
+            elif v.length > 1e-6 and abs(nrm.z) < 0.5 and nrm.dot(v.normalized()) > 0.5:
                 dehors.append(f)
         bmesh.ops.delete(bm, geom=dehors, context="FACES"); bm.to_mesh(o.data); bm.free()
     for m in bpy.data.materials:

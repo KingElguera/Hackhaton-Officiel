@@ -3,7 +3,7 @@
 Tout ce qui est chiffré est calculé ici, par le code : surfaces à partir des dimensions,
 quantités (rendement, couches, pertes), choix par défaut avec leur raison, planning, devis,
 TVA. Les modèles ne servent qu'à lire les photos et à relever les prix.
-Les noms de champs suivent docs/prompt_v0.md (lib/types.ts du front).
+Les noms de champs suivent docs/prompts_v0/prompt_v0.md (lib/types.ts du front).
 """
 import math
 from datetime import date, datetime, timedelta, timezone

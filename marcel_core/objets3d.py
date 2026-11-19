@@ -206,7 +206,7 @@ def empreinte_visuelle(photo: Path) -> Optional[str]:
         im = Image.open(photo).convert("L")
         im.thumbnail((256, 256))
         petit = im.resize((16, 16), Image.BILINEAR)
-        px = list(petit.getdata())
+        px = list(petit.tobytes())   # niveaux de gris, un octet par point
         m = sum(px) / len(px)
         return "".join("1" if v > m else "0" for v in px)   # 256 bits
     except Exception:

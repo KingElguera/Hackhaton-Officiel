@@ -37,7 +37,7 @@ Dans un projet Next.js, copier ces fichiers dans `public/logo/`.
 | Attente : étape « Chiffrer » | `marcel-cherche.svg` |
 | Attente : étapes « Montrer » et suivantes | `marcel-dessine.svg` |
 
-## À remplacer dans `docs/prompt_v0.md`
+## À remplacer dans `docs/prompts_v0/prompt_v0.md`
 
 Le prompt du site décrit encore l'ancienne mascotte (un monsieur à casquette, moustache et bretelles, avec quatre poses).
 Paragraphe de remplacement :

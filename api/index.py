@@ -163,7 +163,7 @@ def api_resultat(d: DemandeResultat):
 
 
 # ====================================================================== Marcel Pro (parcours artisan)
-# Contrat : docs/prompt_v0.md (lib/types.ts du front). L'état du chantier vit dans Supabase (table projets).
+# Contrat : docs/prompts_v0/prompt_v0.md (lib/types.ts du front). L'état du chantier vit dans Supabase (table projets).
 from datetime import datetime, timezone  # noqa: E402
 
 from fastapi import Response  # noqa: E402

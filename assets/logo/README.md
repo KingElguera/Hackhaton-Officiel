@@ -25,7 +25,7 @@ Dans un projet Next.js, copier ces fichiers dans `public/logo/`.
 
 - Le nom « Marcel Pro » s'écrit en texte à côté de la tête, en police Fredoka.
 - Les animations tournent en boucle (2,6 à 3 s) et restent sur une pose fixe si l'appareil demande moins d'animations.
-- Couleurs : marron espresso `#2A1D17`, blanc `#FFFFFF`, beige `#EADCC6` (museau), vert `#009C69` (crayon, loupe, points), vert foncé `#004F35` (fond de l'icône).
+- Couleurs : espresso `#2A1D17`, nuage `#F4F1EC`, vert `#009C69`.
 - Le museau est fermé : le logo se pose sur n'importe quel fond.
 
 ## Quelle image à quel moment

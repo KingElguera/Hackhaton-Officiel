@@ -1,7 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="Marcel Pro"><title>Marcel Pro</title><rect width="120" height="120" rx="26" fill="#F4F1EC"/><g transform="translate(9 6) scale(.85)"><g class="head">
-<path fill="#2A1D17" d="M23 43c-7-10-8-22-3-30 9 1 18 8 23 17 11-4 23-4 34 0 5-9 14-16 23-17 5 8 4 20-3 30 6 7 10 15 11 23l9 8c-7 2-12 5-16 9-10 14-25 22-41 22s-31-8-41-22c-4-4-9-7-16-9l9-8c1-8 5-16 11-23z"/>
-<path fill="#F4F1EC" d="M8 70C20 49 45 45 60 59 75 45 100 49 112 70 99 58 76 56 62 68H58C44 56 21 58 8 70z"/>
-<path fill="#F4F1EC" d="M60 62C55 70 54 80 46 90C41 97 50 102 60 102C70 102 79 97 74 90C66 80 65 70 60 62z"/>
-<ellipse fill="#2A1D17" cx="60" cy="92.5" rx="8" ry="5.5"/>
-<g class="eyes"><circle fill="#F4F1EC" cx="39" cy="76" r="5.2"/><circle fill="#F4F1EC" cx="81" cy="76" r="5.2"/></g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="Marcel Pro"><title>Marcel Pro</title><rect width="120" height="120" rx="26" fill="#004F35"/><g transform="translate(9 6) scale(.85)"><g class="head">
+<path fill="#FFFFFF" d="M23 43c-7-10-8-22-3-30 9 1 18 8 23 17 11-4 23-4 34 0 5-9 14-16 23-17 5 8 4 20-3 30 6 7 10 15 11 23l9 8c-7 2-12 5-16 9-10 14-25 22-41 22s-31-8-41-22c-4-4-9-7-16-9l9-8c1-8 5-16 11-23z"/>
+<path fill="#2A1D17" d="M8 70C20 49 45 45 60 59 75 45 100 49 112 70 99 58 76 56 62 68H58C44 56 21 58 8 70z"/>
+<path fill="#2A1D17" d="M60 62C55 70 54 80 46 90C41 97 50 102 60 102C70 102 79 97 74 90C66 80 65 70 60 62z"/>
+<ellipse fill="#FFFFFF" cx="60" cy="92.5" rx="8" ry="5.5"/>
+<g class="eyes"><circle fill="#2A1D17" cx="39" cy="76" r="5.2"/><circle fill="#2A1D17" cx="81" cy="76" r="5.2"/></g>
 </g></g></svg>

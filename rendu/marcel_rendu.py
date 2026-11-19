@@ -112,7 +112,9 @@ plafond = boite("plafond", (W + 2 * E, D + 2 * E, 0.05), (0, 0, H + 0.025), plaf
 murs = {}
 for nom, m in MURS.items():
     long_ = m["longueur"] + (2 * E if nom in ("fond", "avant") else 0)
-    murs[nom] = boite("mur_" + nom, taille_selon_mur(nom, long_, E, H), (m["centre"].x, m["centre"].y, H / 2), peinture)
+    teinte_mur = cfg.get("peinture_murs", {}).get(nom)   # mur d'accent : sa propre couleur
+    m_mur = matiere("peinture_" + nom, teinte_mur, 0.85) if teinte_mur else peinture
+    murs[nom] = boite("mur_" + nom, taille_selon_mur(nom, long_, E, H), (m["centre"].x, m["centre"].y, H / 2), m_mur)
     c = m["centre"] + m["dedans"] * (E / 2 + 0.0075)
     boite("plinthe_" + nom, taille_selon_mur(nom, m["longueur"], 0.015, 0.08), (c.x, c.y, 0.04), blanc)
 

@@ -26,7 +26,9 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
-from typing import List, Literal, Optional
+import re
+import unicodedata
+from typing import Dict, List, Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -38,7 +40,17 @@ Mur = Literal["fond", "avant", "gauche", "droit"]
 TEINTES = {"blanc": "#F4F1EA", "blanc cassé": "#EFE9DD", "beige": "#E6D8C3", "lin": "#DDD2C0", "gris clair": "#D9D9D6",
            "gris": "#BDBDBD", "gris anthracite": "#4A4D52", "noir": "#2B2B2B", "vert sauge": "#A9B8A2", "vert": "#8FAE8B",
            "vert foncé": "#3F5B4C", "bleu": "#8DB8E0", "bleu nuit": "#27344F", "bleu canard": "#2F6F7E", "terracotta": "#C9764F",
-           "jaune": "#E8C76A", "ocre": "#C99A4B", "rose": "#E8B7B0", "rose poudré": "#E5C6C0", "taupe": "#A89B8C"}
+           "jaune": "#E8C76A", "ocre": "#C99A4B", "rose": "#E8B7B0", "rose poudré": "#E5C6C0", "taupe": "#A89B8C",
+           "rouge": "#B23A32", "rouge brique": "#9E4A35", "bordeaux": "#6E2433", "orange": "#E08A3C", "corail": "#E57F6B",
+           "violet": "#7B5E8C", "lilas": "#B9A6CB", "marron": "#6B4A35", "chocolat": "#4E3428", "kaki": "#7D7A4E",
+           "moutarde": "#C9A13B", "crème": "#F1E7D2", "sable": "#D9C6A5", "bleu ciel": "#B7D3E8", "bleu marine": "#22304A",
+           "bleu pétrole": "#24505A", "turquoise": "#4FA9A6", "vert olive": "#7A7C45", "vert émeraude": "#2E7D5B",
+           "vert d'eau": "#B9D8C9", "gris perle": "#CFCFCB", "anthracite": "#4A4D52"}
+
+
+def _assombrir(hx: str, k: float = 0.85) -> str:
+    c = [int(hx.lstrip("#")[i:i + 2], 16) for i in (0, 2, 4)]
+    return "#" + "".join(f"{round(v * k):02X}" for v in c)
 
 
 # ---------------------------------------------------------------- la demande envoyée par le site
@@ -78,7 +90,8 @@ class MeubleRendu(BaseModel):
 class DemandeRendu(BaseModel):
     projet_id: Optional[str] = None
     piece: PieceRendu
-    peinture: str = Field("blanc", description="nom de teinte courant ou code #RRGGBB")
+    peinture: str = Field("blanc", description="nom de teinte courant, code #RRGGBB, ou phrase (« blanc cassé sur 3 murs, vert sauge sur le mur gauche »)")
+    murs: Dict[Mur, str] = Field(default_factory=dict, description="teinte propre à un mur (mur d'accent), ex. {'gauche': 'vert sauge'}")
     sol: SolRendu = Field(default_factory=SolRendu)
     ouvertures: List[OuvertureRendu] = Field(default_factory=list)
     meubles: List[MeubleRendu] = Field(default_factory=list, max_length=6)
@@ -209,7 +222,16 @@ def depuis_fiche(fiche: dict, choix: Optional[dict] = None, projet_id: Optional[
     postes = {p.get("poste") for p in fiche.get("postes") or []}
     peinture = str(choix.get("teinte_murs") or "blanc") if ("murs" in postes or not postes) else "blanc"
     teinte_sol = str(choix.get("teinte_sol") or "").lower() + " " + str(choix.get("revetement_sol") or "").lower()
-    teintes = next((t for mots, t in SOLS if any(m in teinte_sol for m in mots)), ["#B98A5A", "#8E6238"])
+    teintes = next((t for mots, t in SOLS if any(m in teinte_sol for m in mots)), None)
+    if teintes is None:  # une couleur franche (« bleu », « rouge »…) : on l'applique telle quelle aux lames
+        connues = _teintes_dans(teinte_sol)
+        if connues:
+            hx = TEINTES[connues[0]]
+            teintes = [hx, _assombrir(hx)]
+        else:
+            teintes = ["#B98A5A", "#8E6238"]
+            if str(choix.get("teinte_sol") or "").strip():
+                alertes.append(f"teinte de sol « {choix['teinte_sol']} » inconnue : parquet chêne par défaut")
     longueur = {"fond": L, "avant": L, "gauche": l, "droit": l}
     ouvertures = []
     for i, mur in enumerate(["fond", "avant", "droit"][:int(fiche.get("nb_portes") or 0)]):
@@ -289,6 +311,57 @@ def _fichier_depuis(source: str, dossier: Path, nom: str) -> Path:
     return p
 
 
+def _sans_accents(t: str) -> str:
+    return "".join(c for c in unicodedata.normalize("NFD", t.lower()) if unicodedata.category(c) != "Mn")
+
+
+# Les mots qui désignent un mur, vus depuis l'intérieur de la pièce (même repère que les ouvertures).
+MOTS_MURS = [("gauche", "gauche"), ("droite", "droit"), ("droit", "droit"), ("fond", "fond"), ("entree", "avant"), ("avant", "avant")]
+MOTS_ACCENT = ("tete de lit", "mur d'accent", "un mur", "un seul mur", "pan de mur")
+
+
+def _teintes_dans(texte: str) -> List[str]:
+    """Les teintes connues citées dans un texte, dans l'ordre (« vert sauge » passe avant « vert »)."""
+    t, trouvees = _sans_accents(texte), []
+    for nom in sorted(TEINTES, key=len, reverse=True):
+        for m in re.finditer(r"\b" + re.escape(_sans_accents(nom)) + r"(?:e?s)?\b", t):
+            if not any(a <= m.start() < b for _, a, b in trouvees):
+                trouvees.append((nom, m.start(), m.end()))
+    return [nom for nom, _, _ in sorted(trouvees, key=lambda x: x[1])]
+
+
+def lire_peinture(texte: str):
+    """Comprend une phrase de couleur : renvoie (teinte de base, {mur: teinte}, alertes).
+
+    « Blanc cassé mat sur 3 murs, vert sauge mat sur le mur gauche (tête de lit) »
+      → base « blanc cassé », {"gauche": "vert sauge"}.
+    """
+    texte, alertes = (texte or "").strip(), []
+    if not texte or texte.startswith("#") or texte.lower() in TEINTES:
+        return texte or "blanc", {}, alertes
+    base, murs, derniere = None, {}, None
+    for morceau in re.split(r"[,;/+]|\bet\b|\bavec\b", texte, flags=re.I):
+        t = _sans_accents(morceau)
+        if not t.strip():
+            continue
+        teintes = _teintes_dans(morceau) or ([derniere] if derniere else [])
+        cibles = [mur for mot, mur in MOTS_MURS if re.search(r"\b" + mot + r"\b", t)]
+        if not cibles and any(m in t for m in MOTS_ACCENT):
+            cibles = ["fond"]
+            alertes.append("mur d'accent sans côté précisé : Marcel l'a mis sur le mur du fond")
+        if not teintes:
+            continue
+        derniere = teintes[-1]
+        if cibles:
+            for mur in dict.fromkeys(cibles):
+                murs[mur] = teintes[-1]
+        elif base is None:
+            base = teintes[0]
+    if base is None and not murs:
+        alertes.append(f"teinte « {texte} » inconnue : murs rendus en blanc")
+    return base or "blanc", murs, alertes
+
+
 def _teinte(nom: str, alertes: list) -> str:
     n = (nom or "").strip()
     if n.startswith("#") and len(n) == 7:
@@ -308,7 +381,13 @@ def vers_chantier(d: DemandeRendu, dossier: Path, modele_3d: str = "trellis2") -
     from . import objets3d
     alertes, meubles, generations = [], [], []
     chantier = {"largeur": d.piece.largeur_cm / 100, "profondeur": d.piece.profondeur_cm / 100, "hauteur": d.piece.hauteur_cm / 100,
-                "peinture": _teinte(d.peinture, alertes), "plinthe": "#F4F1EA", "qualite": d.qualite, "vues": list(d.vues)}
+                "plinthe": "#F4F1EA", "qualite": d.qualite, "vues": list(d.vues)}
+    base, murs, a = lire_peinture(d.peinture)
+    alertes += a
+    chantier["peinture"] = _teinte(base, alertes)
+    murs.update(d.murs)
+    if murs:
+        chantier["peinture_murs"] = {mur: _teinte(t, alertes) for mur, t in murs.items()}
     if d.sol.image:
         try:
             chantier["sol_image"] = str(_fichier_depuis(d.sol.image, dossier, "sol").resolve())

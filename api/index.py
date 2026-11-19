@@ -226,21 +226,33 @@ def _maj(cid: str, valeurs: dict) -> dict:
     return base.modifier("projets", {"id": cid}, valeurs)[0]
 
 
+# Chantiers montrés à tous les comptes, marqués « Exemple ». Aucun par défaut : un nouveau compte part de zéro.
+# (MARCEL_EXEMPLES=<id>,<id> dans les variables Vercel pour en montrer.)
+EXEMPLES_DEFAUT = ""
+
+
 @app.get("/api/chantiers")
 def lister_chantiers(email: Optional[str] = Query(None, description="e-mail de l'artisan connecté : seuls ses chantiers")):
     if not base.actif():
         raise HTTPException(503, "Supabase n'est pas configuré sur le back")
-    params = {"select": "id,nom,created_at,statut,fiche", "fiche": "not.is.null", "order": "created_at.desc", "limit": 50}
+    params = {"select": "id,nom,created_at,statut,fiche,email_artisan", "fiche": "not.is.null", "order": "created_at.desc", "limit": 50}
+    exemples = [x.strip() for x in os.environ.get("MARCEL_EXEMPLES", EXEMPLES_DEFAUT).split(",") if x.strip()]
     if email is not None:
         e = email.strip()
         if not e or any(c in e for c in "*%,()"):
             return []
-        params["email_artisan"] = "ilike." + e   # même e-mail, sans tenir compte des majuscules
+        # ses chantiers (même e-mail, sans tenir compte des majuscules) + les chantiers d'exemple, visibles par tous
+        params["or"] = f"(email_artisan.ilike.{e}" + (f",id.in.({','.join(exemples)})" if exemples else "") + ")"
     with base._client() as c:
         r = c.get("/projets", params=params)
         r.raise_for_status()
-    return [{"id": p["id"], "nom": p.get("nom") or "Chantier", "piece": (p.get("fiche") or {}).get("piece"),
-             "cree_le": p["created_at"], "etat": ch.ETAT_FRONT.get(p.get("statut"), "brouillon")} for p in r.json()]
+    out = []
+    for p in r.json():
+        exemple = email is not None and p["id"] in exemples and (p.get("email_artisan") or "").lower() != email.strip().lower()
+        out.append({"id": p["id"], "nom": ("Exemple · " if exemple else "") + (p.get("nom") or "Chantier"),
+                    "piece": (p.get("fiche") or {}).get("piece"), "cree_le": p["created_at"],
+                    "etat": ch.ETAT_FRONT.get(p.get("statut"), "brouillon"), "exemple": exemple})
+    return sorted(out, key=lambda x: x["exemple"])   # ses propres chantiers d'abord, l'exemple en dernier
 
 
 @app.post("/api/chantiers")

@@ -526,13 +526,13 @@ def vers_chantier(d: DemandeRendu, dossier: Path, modele_3d: str = "trellis2") -
                 fait = True
             except Exception as e:
                 generations.append({"nom": nom, "echec": f"{type(e).__name__}: {e}"[:300], "duree_s": round(time.monotonic() - t0, 1)})
-                alertes.append(f"{nom} : objet 3D impossible ({type(e).__name__}) — affiché en volume simple")
+                alertes.append(f"{nom} : montré en volume simple pour l'instant (le modèle 3D n'a pas pu être fabriqué)")
         if not fait:
             if m.profondeur_cm and m.hauteur_cm:
                 meubles.append({**place, "taille": [m.largeur_cm / 100, m.profondeur_cm / 100, m.hauteur_cm / 100],
                                 **({"couleur": m.couleur} if m.couleur else {})})
             else:
-                alertes.append(f"{nom} : ni objet 3D ni dimensions complètes — non affiché")
+                alertes.append(f"{nom} : pas affiché (modèle 3D indisponible, et profondeur ou hauteur manquante)")
     chantier["meubles"] = meubles
     return {"chantier": chantier, "alertes": alertes, "meubles_3d": generations}
 

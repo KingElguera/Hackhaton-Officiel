@@ -219,6 +219,20 @@ def chantier_chiffrage(projet_id: str, f: dict, choix: dict, fournisseurs: Optio
 
 
 # ---------------------------------------------------------------- 4. planning (murs → sol → finitions)
+def ouvre(d: date) -> date:
+    """Le prochain jour travaillé (lundi à vendredi) à partir de d."""
+    while d.weekday() >= 5:
+        d += timedelta(days=1)
+    return d
+
+
+def plus_jours_ouvres(d: date, n: int) -> date:
+    """d + n jours travaillés (les week-ends sont sautés)."""
+    for _ in range(n):
+        d = ouvre(d + timedelta(days=1))
+    return d
+
+
 def planning(f: dict, choix: dict, synth: dict) -> list:
     s = surfaces(f)
     postes = {p["poste"] for p in f.get("postes") or []}
@@ -229,7 +243,7 @@ def planning(f: dict, choix: dict, synth: dict) -> list:
         delais[l["ref"]] = d
     delai_max = max(delais.values(), default=3)
     souhait = f.get("date_debut_souhaitee")
-    debut = max(date.fromisoformat(souhait) if souhait else date.today(), date.today() + timedelta(days=delai_max + 1))
+    debut = ouvre(max(date.fromisoformat(souhait) if souhait else date.today(), date.today() + timedelta(days=delai_max + 1)))
     commander_avant = (debut - timedelta(days=delai_max + 1)).isoformat()
     taches = []
     pc, fc = a_creer(f)
@@ -252,7 +266,7 @@ def planning(f: dict, choix: dict, synth: dict) -> list:
     for i, (t, d) in enumerate(taches, 1):
         out.append({"ordre": i, "tache": t, "duree_j": d, "debut": jour.isoformat(),
                     "commander_avant": commander_avant if i == 1 else None})
-        jour += timedelta(days=d)
+        jour = plus_jours_ouvres(jour, d)
     return out
 
 

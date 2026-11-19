@@ -98,6 +98,16 @@ def evaluer(chantier: Chantier, reponse: Optional[dict]) -> dict:
 
 
 # ---------------------------------------------------------------- synthèse (le code compare)
+UNITES_FR = {"m2": "m²", "pieces": "pièce(s)", "L": "L", "kg": "kg", "m": "m"}
+UNITES_MOT = {"m2": "au m²", "pieces": "à la pièce", "L": "au litre", "kg": "au kilo", "m": "au mètre"}
+
+
+def _fr(x, dec=None) -> str:
+    """Nombre au format français : 5,23 ; 1 363,88 (dec=2 pour les prix)."""
+    t = f"{x:,.{dec}f}" if dec is not None else f"{x:,g}" if abs(x) < 1e6 else f"{x:,.0f}"
+    return t.replace(",", " ").replace(".", ",")
+
+
 def _cout(p: ProduitDemande, l: dict):
     """Nombre d'unités à acheter et coût total pour couvrir le besoin. None si non comparable."""
     prix = l.get("prix_eur")
@@ -106,13 +116,15 @@ def _cout(p: ProduitDemande, l: dict):
     if p.besoin and p.unite_besoin == "pieces":
         cont = l.get("contenance") if l.get("unite_contenance") == "pieces" and l.get("contenance") else 1
         n = math.ceil(p.besoin / cont - 1e-9)
-        return n, round(n * prix, 2), f"{p.besoin:g} pièce(s)" + (f" ÷ lot de {cont:g}" if cont != 1 else "") + f" → {n} × {prix:.2f} €"
+        return n, round(n * prix, 2), f"{_fr(p.besoin)} pièce(s)" + (f" ÷ lot de {_fr(cont)}" if cont != 1 else "") + f" → {n} × {_fr(prix, 2)} €"
     if p.besoin and p.unite_besoin:
         cont, u = l.get("contenance"), l.get("unite_contenance")
         if not cont or u != p.unite_besoin:
-            return None, None, f"contenance non comparable ({cont or '?'} {u or '?'} pour un besoin en {p.unite_besoin})"
+            vendu = f"vendu {UNITES_MOT[u]}" if u in UNITES_MOT else "contenance non affichée"
+            return None, None, f"Marcel n'a pas pu comparer : {vendu}, besoin {UNITES_MOT.get(p.unite_besoin, '')}".rstrip(", ")
         n = math.ceil(p.besoin / cont - 1e-9)
-        return n, round(n * prix, 2), f"{p.besoin:g} {p.unite_besoin} ÷ {cont:g} → {n} × {prix:.2f} €"
+        u_fr = UNITES_FR.get(p.unite_besoin, p.unite_besoin)
+        return n, round(n * prix, 2), f"{_fr(p.besoin)} {u_fr} ÷ {_fr(cont)} → {n} × {_fr(prix, 2)} €"
     return 1, round(prix, 2), "1 unité (pas de besoin chiffré)"
 
 

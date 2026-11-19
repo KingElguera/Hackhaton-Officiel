@@ -1,7 +1,7 @@
 [project]
 name = "marcel"
 version = "0.1.0"
-description = "Add your description here"
+description = "Marcel Pro : devis des artisans rénovateurs, prix relevés par des agents H Company, rendu 3D Blender"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [

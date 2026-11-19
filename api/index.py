@@ -1,17 +1,21 @@
-"""Marcel — API pour le front (Vercel, fonctions Python).
+"""Marcel Pro — API du site (FastAPI, fonctions Python sur Vercel).
 
-Sans état : le front garde le `projet` et les `sessions` et les renvoie à chaque appel.
+Sans état : chaque chantier vit dans Supabase (table projets, RLS activée). Contrat détaillé : docs/API_FRONT.md.
 
   GET  /api/sante                       → le back répond-il, les clés sont-elles configurées ?
-  POST /api/comprendre                  → photo + texte + mesures → projet structuré (à faire valider)
-  POST /api/parcours                    → lance un agent H par enseigne → sessions + liens live
-  GET  /api/statut?ids=<id1>,<id2>      → avancement des agents (appeler toutes les 30 s max)
-  POST /api/resultat                    → vérification, choix, planning, budget (+ guide)
-  POST /api/rendu                       → demande les images 3D de la pièce (mise en file pour l'atelier)
-  GET  /api/rendu?id=<id>               → où en est le rendu, puis les images (appeler toutes les 10 s)
-  POST /api/plan                        → photo du plan coté → dimensions, portes et fenêtres à confirmer par l'artisan
+  GET  /api/chantiers?email=…           → les chantiers de cet artisan
+  POST /api/chantiers                   → fiche (+ photos, plan, meubles) → chantier + questions de Marcel
+  GET  /api/chantiers/<id>/questions    → les questions (choix techniques, goûts, ce qui manque)
+  POST /api/chantiers/<id>/reponses     → réponses → produits et quantités, lance les 3 agents H et le rendu 3D (une seule fois)
+  GET  /api/chantiers/<id>/etat         → avancement (agents, rendu) ; à la fin : synthèse des prix, devis, planning
+  GET  /api/chantiers/<id>/resultat     → résumé, prix, devis, visuel, planning
+  POST /api/chantiers/<id>/choix | conseils | devis.pdf | envoye | rendu
   POST /api/dictee                      → enregistrement vocal (ou texte) → fiche pré-remplie + ce qu'il manque, à confirmer
-  POST /api/chantiers/<id>/rendu        → (re)demande les images d'un chantier ; fait automatiquement quand il est chiffré
+  POST /api/plan                        → photo du plan coté → dimensions, portes et fenêtres à confirmer
+  POST /api/rendu · GET /api/rendu?id=  → rendu 3D d'une pièce hors parcours (mis en file pour l'atelier)
+
+Routes du premier prototype (17/11, particuliers), désactivées en production (MARCEL_PROTOTYPES=1 en local) :
+  POST /api/comprendre · POST /api/parcours · GET /api/statut · POST /api/resultat
 """
 import os
 import sys
@@ -26,16 +30,23 @@ for _cle in ("HAI_API_KEY", "HF_TOKEN", "SUPABASE_URL", "SUPABASE_SERVICE_KEY", 
     if os.environ.get(_cle) is not None:
         os.environ[_cle] = os.environ[_cle].strip()
 
-from fastapi import FastAPI, HTTPException, Query  # noqa: E402
+from fastapi import Depends, FastAPI, HTTPException, Query  # noqa: E402
 from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 from pydantic import BaseModel, Field  # noqa: E402
 
 from marcel_core import Projet  # noqa: E402
 from marcel_core import agents  # noqa: E402
 from marcel_core.rendus import DemandeRendu  # noqa: E402
-from marcel_core.verif import normaliser, synthese  # noqa: E402
+from marcel_core.verif import normaliser, synthese as synthese_prototype  # noqa: E402
 
 app = FastAPI(title="Marcel API", version="0.1")
+
+
+def _prototype():
+    """Routes du premier prototype (17/11, particuliers). Elles lancent des agents payants sans compte :
+    désactivées en production, réactivables en local avec MARCEL_PROTOTYPES=1."""
+    if os.environ.get("MARCEL_PROTOTYPES") != "1":
+        raise HTTPException(404, "route du prototype du 17 novembre, désactivée en production")
 app.add_middleware(CORSMiddleware, allow_origins=os.environ.get("FRONT_ORIGINS", "*").split(","),
                    allow_methods=["*"], allow_headers=["*"])
 
@@ -103,7 +114,7 @@ def sante():
             "supabase": supa}
 
 
-@app.post("/api/comprendre")
+@app.post("/api/comprendre", dependencies=[Depends(_prototype)])
 def api_comprendre(d: DemandeComprendre):
     from marcel_core.hf import comprendre
     try:
@@ -113,7 +124,7 @@ def api_comprendre(d: DemandeComprendre):
         _erreur(e, "compréhension (Hugging Face)")
 
 
-@app.post("/api/parcours")
+@app.post("/api/parcours", dependencies=[Depends(_prototype)])
 def api_parcours(d: DemandeParcours):
     projet = normaliser(d.projet)  # le code recalcule toujours les contraintes chiffrées
     if not projet.besoins:
@@ -131,7 +142,7 @@ def api_parcours(d: DemandeParcours):
     return {"projet": projet.model_dump(), "sessions": sessions}
 
 
-@app.get("/api/statut")
+@app.get("/api/statut", dependencies=[Depends(_prototype)])
 def api_statut(ids: str = Query(..., description="session_id séparés par des virgules")):
     out = []
     for sid in [i for i in ids.split(",") if i]:
@@ -142,7 +153,7 @@ def api_statut(ids: str = Query(..., description="session_id séparés par des v
     return {"sessions": out, "tous_termines": all(s.get("termine") for s in out)}
 
 
-@app.post("/api/resultat")
+@app.post("/api/resultat", dependencies=[Depends(_prototype)])
 def api_resultat(d: DemandeResultat):
     projet = normaliser(d.projet)
     sessions = []
@@ -152,7 +163,7 @@ def api_resultat(d: DemandeResultat):
         except Exception as e:
             sessions.append({"enseigne": s.enseigne, "session_id": s.session_id, "statut": "exception",
                              "erreur": f"{type(e).__name__}: {e}"[:300]})
-    res = synthese(projet, sessions)
+    res = synthese_prototype(projet, sessions)
     if d.guide and res["achats"]:
         from marcel_core.hf import guide
         try:
@@ -233,6 +244,8 @@ EXEMPLES_DEFAUT = ""
 
 @app.get("/api/chantiers")
 def lister_chantiers(email: Optional[str] = Query(None, description="e-mail de l'artisan connecté : seuls ses chantiers")):
+    if email is None:
+        raise HTTPException(400, "e-mail de l'artisan requis : chacun ne voit que ses chantiers")
     if not base.actif():
         raise HTTPException(503, "Supabase n'est pas configuré sur le back")
     params = {"select": "id,nom,created_at,statut,fiche,email_artisan", "fiche": "not.is.null", "order": "created_at.desc", "limit": 50}

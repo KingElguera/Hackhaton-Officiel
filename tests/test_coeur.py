@@ -159,3 +159,14 @@ def test_empreinte_visuelle_tolere_la_recompression(tmp_path: Path):
     im.resize((200, 150)).save(b, quality=55)                         # réduite et recompressée, comme par le site
     ea, eb = objets3d.empreinte_visuelle(a), objets3d.empreinte_visuelle(b)
     assert sum(x != y for x, y in zip(ea, eb)) <= 12
+
+
+# ---------------------------------------------------------------- sécurité des routes
+def test_routes_du_prototype_fermees_et_liste_sans_email_refusee(monkeypatch):
+    from fastapi.testclient import TestClient
+    import api.index as api
+    monkeypatch.delenv("MARCEL_PROTOTYPES", raising=False)
+    c = TestClient(api.app)
+    assert c.post("/api/parcours", json={"projet": {}}).status_code == 404     # lancerait des agents payants
+    assert c.get("/api/statut", params={"ids": "x"}).status_code == 404
+    assert c.get("/api/chantiers").status_code == 400                         # pas de liste de tous les chantiers

@@ -302,6 +302,13 @@ def envoyer_reponses(cid: str, d: DemandeReponses):
     p = _maj(cid, {"fiche": fiche, "reponses": d.reponses, "choix_delegues": delegues,
                    "besoins": [x.model_dump() for x in chantier.produits], "sessions": sessions,
                    "statut": "en_recherche", "dernier_suivi": datetime.now(timezone.utc).isoformat()})
+    try:  # le rendu 3D n'a pas besoin des prix : il part tout de suite, en parallèle des agents
+        from marcel_core import rendus
+        ligne, alertes = rendus.demander_pour_projet({**p, "fiche": fiche}, choix)
+        p = _maj(cid, {"resultat": {"visuel": {"avant_url": None, "apres_url": None, "rendu_id": ligne["id"], "etat": "a_faire",
+                                               "alertes": alertes, "alertes_demande": alertes}}})
+    except Exception as e:
+        print(f"rendu non demandé au lancement : {type(e).__name__}: {e}", flush=True)
     return ch.avancement(p)
 
 
@@ -326,12 +333,19 @@ def _finaliser(p: dict) -> dict:
                 enregistrer_session({**s, **evaluer(chantier, s.get("reponse"))}, chantier, p["id"], skill)
     except Exception as e:
         print(f"journal executions impossible : {e}", flush=True)
-    try:  # le visuel est demandé à l'atelier (TRELLIS + Blender) ; il arrive quelques minutes après, sans rien bloquer
-        from marcel_core import rendus
-        ligne, alertes = rendus.demander_pour_projet({**p, "fiche": fiche}, choix)
-        resultat["visuel"].update(rendu_id=ligne["id"], etat="a_faire", alertes=alertes, alertes_demande=alertes)
-    except Exception as e:
-        print(f"rendu non demandé : {type(e).__name__}: {e}", flush=True)
+    try:  # visuel déjà demandé au lancement (et peut-être déjà fait) : on le garde tel qu'il est en base, à jour
+        deja = ((_projet(p["id"]).get("resultat") or {}).get("visuel") or {})
+    except Exception:
+        deja = (p.get("resultat") or {}).get("visuel") or {}
+    if deja.get("rendu_id"):
+        resultat["visuel"] = deja
+    else:
+        try:  # ancien chantier lancé avant cette version : le visuel est demandé maintenant
+            from marcel_core import rendus
+            ligne, alertes = rendus.demander_pour_projet({**p, "fiche": fiche}, choix)
+            resultat["visuel"].update(rendu_id=ligne["id"], etat="a_faire", alertes=alertes, alertes_demande=alertes)
+        except Exception as e:
+            print(f"rendu non demandé : {type(e).__name__}: {e}", flush=True)
     return _maj(p["id"], {"resultat": resultat, "devis": dv, "total_eur": ch.totaux(dv)["total_ttc"],
                           "statut": "termine"})  # → webhook Supabase → n8n → mail
 

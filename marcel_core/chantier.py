@@ -81,6 +81,12 @@ DEFAUTS = {  # ce que Marcel choisit quand on lui fait confiance, et pourquoi (u
 }
 
 
+def _juste_une_gamme(texte: str) -> bool:
+    """« entrée de gamme », « haut de gamme »… : une gamme, pas un produit (pour le sol, ce n'est pas un revêtement)."""
+    t = (texte or "").strip().lower()
+    return bool(t) and ("gamme" in t or t in ("premier prix", "standard", "luxe", "économique", "economique")) and len(t) < 30
+
+
 def generer_questions(f: dict) -> list:
     qs = []
     n_photos = len(f.get("photos") or [])
@@ -96,7 +102,8 @@ def generer_questions(f: dict) -> list:
     for p in f.get("postes") or []:
         poste, gamme = p.get("poste"), (p.get("gamme_ou_produit") or "").strip()
         for qid, bloc, texte, options in CATALOGUE_QUESTIONS.get(poste, []):
-            if gamme and qid in ("gamme_murs", "gamme_plafond", "revetement_sol", "plinthes", "eclairage"):
+            if gamme and qid in ("gamme_murs", "gamme_plafond", "revetement_sol", "plinthes", "eclairage") \
+                    and not (qid == "revetement_sol" and _juste_une_gamme(gamme)):
                 continue  # l'artisan a déjà donné la gamme ou le produit pour ce poste
             q = {"id": qid, "bloc": bloc, "poste": poste, "question": texte, "delegable": True,
                  "type_reponse": "choix" if options else "texte"}
@@ -125,7 +132,9 @@ def appliquer_reponses(f: dict, questions: list, reponses: list):
                              "change_le_prix": q["bloc"] == "choix_technique"})
     for p in f.get("postes") or []:  # gamme saisie dans la fiche = choix de l'artisan
         g = (p.get("gamme_ou_produit") or "").strip()
-        if g:
+        if g and p["poste"] == "sol" and _juste_une_gamme(g):
+            choix.setdefault("gamme_sol", g)   # le revêtement reste à choisir (question ou défaut de Marcel)
+        elif g:
             choix.setdefault({"murs": "gamme_murs", "plafond": "gamme_plafond", "sol": "revetement_sol",
                               "plinthes": "plinthes", "eclairage": "eclairage"}[p["poste"]], g)
     delegues.sort(key=lambda d: not d["change_le_prix"])  # les choix techniques d'abord
@@ -175,7 +184,7 @@ def produits(f: dict, choix: dict) -> list:
     if "sol" in postes:
         rev = choix.get("revetement_sol", "Parquet stratifié")
         teinte = choix.get("teinte_sol", "")
-        ajouter(f"{rev} {teinte}".strip(), s["sol_m2"] * 1.10, "m2", f"{s['sol_m2']} m² + 10 % de chutes")
+        ajouter(f"{rev} {teinte} {choix.get('gamme_sol', '')}".strip(), s["sol_m2"] * 1.10, "m2", f"{s['sol_m2']} m² + 10 % de chutes")
         if "carrelage" in rev.lower():
             ajouter("Colle carrelage sol intérieur sac 25 kg", s["sol_m2"] * 5, "kg", "≈ 5 kg/m²")
             ajouter("Joint carrelage", s["sol_m2"] * 0.5, "kg", "≈ 0,5 kg/m²")
@@ -342,6 +351,24 @@ def avancement(p: dict) -> dict:
             "agents": agents}
 
 
+def unite_propre(u) -> str:
+    """« La pièce » → « pièce », « M2 » → « m² », « Le litre » → « L » : l'unité affichée sur les sites, en propre."""
+    t = " ".join(str(u or "").replace("\u00a0", " ").split())
+    bas = t.lower()
+    for article in ("la ", "le ", "l'", "l’", "1 ", "à la ", "au "):
+        if bas.startswith(article):
+            t, bas = t[len(article):].strip(), bas[len(article):].strip()
+    if bas in ("m2", "m²", "mètre carré", "metre carre", "m2s"):
+        return "m²"
+    if bas in ("pièce", "piece", "pièces", "pieces", "unité", "unite", "u", "pce"):
+        return "pièce"
+    if bas in ("litre", "litres", "l"):
+        return "L"
+    if bas in ("mètre", "metre", "ml", "m linéaire", "mètre linéaire"):
+        return "m"
+    return t
+
+
 def resultat_front(p: dict) -> dict:
     r = p.get("resultat") or {}
     synth = r.get("synthese") or {}
@@ -349,7 +376,7 @@ def resultat_front(p: dict) -> dict:
 
     def offre(o):
         return {"fournisseur": o["fournisseur"], "produit": o.get("produit"), "prix_eur": o.get("prix_eur"),
-                "unite": o.get("unite") or "", "quantite": o.get("quantite"), "cout_eur": o.get("cout_eur"),
+                "unite": unite_propre(o.get("unite")), "quantite": o.get("quantite"), "cout_eur": o.get("cout_eur"),
                 "calcul": o.get("calcul") or "", "stock": o.get("stock"), "delai_texte": o.get("delai_texte"),
                 "lien": o.get("lien") or "", "releve_le": releve_le}
 

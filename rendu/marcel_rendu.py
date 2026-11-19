@@ -239,7 +239,7 @@ def rendre(nom, largeur, hauteur, echantillons, jpeg=False):
     bpy.ops.render.render(write_still=True)
     return {"fichier": os.path.basename(f), "secondes": round(time.time() - t, 1)}
 
-vues = cfg.get("vues", ["photo1", "photo2", "dessus", "panorama", "maquette"])
+vues = cfg.get("vues", ["photo1", "photo2", "dessus", "maquette"])
 res = (1600, 1000, 64) if finale else (1120, 700, 32)
 fichiers = []
 marge = 0.3
@@ -258,7 +258,7 @@ def degagement(x, y):
 # si un meuble est collé à l'un d'eux, on prend le coin le plus dégagé (sinon le meuble bouche l'image).
 COINS = [(1, -1), (-1, -1), (1, 1), (-1, 1)]   # (signe x, signe y) : avant droit, avant gauche, fond droit, fond gauche
 def score(c):
-    return min(degagement(c[0] * (W / 2 - marge), c[1] * (D / 2 - marge)), 1.2)   # au-delà de 1,2 m, rien ne gêne
+    return min(degagement(c[0] * (W / 2 - marge), c[1] * (D / 2 - marge)), 2.5)   # au-delà de 2,5 m, rien ne gêne
 coins = sorted(COINS, key=lambda c: -score(c))   # tri stable : à égalité, l'ordre par défaut est gardé
 for nom_vue, (sx, sy) in zip(["photo1", "photo2"], coins[:2]):
     if nom_vue not in vues:

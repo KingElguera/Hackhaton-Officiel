@@ -96,7 +96,7 @@ class DemandeRendu(BaseModel):
     ouvertures: List[OuvertureRendu] = Field(default_factory=list)
     meubles: List[MeubleRendu] = Field(default_factory=list, max_length=6)
     vues: List[Literal["photo1", "photo2", "dessus", "panorama", "maquette"]] = Field(
-        default_factory=lambda: ["photo1", "photo2", "dessus", "panorama", "maquette"])
+        default_factory=lambda: ["photo1", "photo2", "dessus", "maquette"])
     qualite: Literal["rapide", "finale"] = "rapide"
 
 
@@ -390,7 +390,7 @@ def _sans_accents(t: str) -> str:
 
 # Les mots qui désignent un mur, vus depuis l'intérieur de la pièce (même repère que les ouvertures).
 MOTS_MURS = [("gauche", "gauche"), ("droite", "droit"), ("droit", "droit"), ("fond", "fond"), ("entree", "avant"), ("avant", "avant")]
-MOTS_ACCENT = ("tete de lit", "mur d'accent", "un mur", "un seul mur", "pan de mur")
+MOTS_ACCENT = ("tete de lit", "mur d'accent", "un mur", "un seul mur", "pan de mur", "1 mur", "1 seul mur", "un des murs")
 
 
 def _teintes_dans(texte: str) -> List[str]:

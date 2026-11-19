@@ -198,6 +198,46 @@ def _photo_locale(image: str, cache: Path) -> Path:
     return p
 
 
+def empreinte_visuelle(photo: Path) -> Optional[str]:
+    """Empreinte qui ne change pas quand la photo est recompressée ou réduite par le site (moyenne sur 16 × 16 gris).
+    Sert à retrouver en cache un meuble déjà modélisé à partir de la même photo produit."""
+    try:
+        from PIL import Image
+        im = Image.open(photo).convert("L")
+        im.thumbnail((256, 256))
+        petit = im.resize((16, 16), Image.BILINEAR)
+        px = list(petit.getdata())
+        m = sum(px) / len(px)
+        return "".join("1" if v > m else "0" for v in px)   # 256 bits
+    except Exception:
+        return None
+
+
+def _meme_photo(cache: Path, bits: Optional[str], tolerance: int = 12) -> Optional[str]:
+    """Clé d'un meuble déjà modélisé dont la photo ressemble à celle-ci (≤ 12 points différents sur 256), sinon None."""
+    if not bits:
+        return None
+    try:
+        connus = json.loads((cache / "empreintes.json").read_text())
+    except Exception:
+        return None
+    meilleur = min(((sum(a != b for a, b in zip(bits, v)), k) for k, v in connus.items() if len(v) == len(bits)), default=None)
+    return meilleur[1] if meilleur and meilleur[0] <= tolerance else None
+
+
+def _retenir(cache: Path, cle: str, bits: Optional[str]):
+    if not bits:
+        return
+    f = cache / "empreintes.json"
+    try:
+        connus = json.loads(f.read_text())
+    except Exception:
+        connus = {}
+    if connus.get(cle) != bits:
+        connus[cle] = bits
+        f.write_text(json.dumps(connus))
+
+
 def objet_3d(image: str, largeur_mm: float, profondeur_mm: Optional[float] = None, hauteur_mm: Optional[float] = None,
              modele: str = "trellis2", cache: Path = CACHE, brut: Optional[str] = None, regenerer: bool = False) -> dict:
     """Photo d'un meuble + ses dimensions → fichier .glb à l'échelle.
@@ -220,6 +260,9 @@ def objet_3d(image: str, largeur_mm: float, profondeur_mm: Optional[float] = Non
             shutil.copy(brut, glb_brut)
         depuis_cache = True
     else:
+        bits = empreinte_visuelle(photo)
+        if not regenerer and not list(cache.glob(f"{cle}_*_brut.glb")):
+            cle = _meme_photo(cache, bits) or cle   # même photo, recompressée par le site : le meuble est déjà modélisé
         existants = sorted(cache.glob(f"{cle}_*_brut.glb"))
         voulu = cache / f"{cle}_{modele}_brut.glb"
         if not regenerer and (voulu.exists() or existants):
@@ -229,6 +272,7 @@ def objet_3d(image: str, largeur_mm: float, profondeur_mm: Optional[float] = Non
             tmp, utilise, duree = generer(str(photo), modele)
             glb_brut = cache / f"{cle}_{utilise}_brut.glb"
             shutil.copy(tmp, glb_brut)
+        _retenir(cache, cle, bits)
     dims = "x".join(str(int(round(v))) if v else "auto" for v in (largeur_mm, profondeur_mm, hauteur_mm))
     final = cache / f"{cle}_{dims}.glb"
     infos = mettre_a_echelle(glb_brut, final, largeur_mm, profondeur_mm, hauteur_mm)

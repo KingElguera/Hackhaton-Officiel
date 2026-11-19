@@ -8,6 +8,7 @@ Hackathon *Build The Future* (H Company × Vercel × Eugenia School), équipe 15
 
 | | |
 |---|---|
+| **Vidéo de démonstration** (6 min, parcours complet) | [Voir la vidéo](https://drive.google.com/file/d/1ru4WthzDo0rumkoik5DPc5yLY-G0BBFO/view?usp=sharing) |
 | **Site** | https://marcel-front.vercel.app |
 | **Back (API)** | https://marcel-back.vercel.app/api/sante |
 | **Modèle économique** | [docs/modele-economique.md](docs/modele-economique.md) : 79 € HT par mois |

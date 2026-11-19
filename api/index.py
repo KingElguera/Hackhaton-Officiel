@@ -9,6 +9,8 @@ Sans état : le front garde le `projet` et les `sessions` et les renvoie à chaq
   POST /api/resultat                    → vérification, choix, planning, budget (+ guide)
   POST /api/rendu                       → demande les images 3D de la pièce (mise en file pour l'atelier)
   GET  /api/rendu?id=<id>               → où en est le rendu, puis les images (appeler toutes les 10 s)
+  POST /api/plan                        → photo du plan coté → dimensions, portes et fenêtres à confirmer par l'artisan
+  POST /api/dictee                      → enregistrement vocal (ou texte) → fiche pré-remplie + ce qu'il manque, à confirmer
   POST /api/chantiers/<id>/rendu        → (re)demande les images d'un chantier ; fait automatiquement quand il est chiffré
 """
 import os
@@ -475,3 +477,38 @@ def rendu_du_chantier(cid: str):
     except Exception as e:
         _erreur(e, "mise en file du rendu (Supabase)")
     return {"id": ligne["id"], "etat": ligne["etat"], "alertes": alertes}
+
+
+class DemandePlan(BaseModel):
+    plan: str = Field(..., description="photo du plan coté, en data URL (data:image/jpeg;base64,...) ≤ 1600 px")
+
+
+@app.post("/api/plan")
+def lire_le_plan(d: DemandePlan):
+    """Lit les cotes écrites sur la photo du plan et propose les valeurs de la fiche. Rien n'est enregistré : l'artisan confirme."""
+    from marcel_core import plan
+    if not d.plan.startswith("data:image/"):
+        raise HTTPException(400, "le plan doit être une image en data URL")
+    try:
+        return plan.lire_plan(d.plan)
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+    except Exception as e:
+        _erreur(e, "lecture du plan (Hugging Face)")
+
+
+class DemandeDictee(BaseModel):
+    audio: Optional[str] = Field(None, description="enregistrement du micro en data URL (audio/webm, audio/mp4, audio/wav), 2 min max")
+    texte: Optional[str] = Field(None, description="à la place de l'audio : un texte déjà transcrit ou tapé")
+
+
+@app.post("/api/dictee")
+def dictee(d: DemandeDictee):
+    """L'artisan dicte son chantier : renvoie la fiche pré-remplie et ce qu'il manque. Rien n'est enregistré."""
+    from marcel_core import dictee as _dictee
+    try:
+        return _dictee.dicter(d.audio, d.texte)
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+    except Exception as e:
+        _erreur(e, "dictée (Hugging Face)")

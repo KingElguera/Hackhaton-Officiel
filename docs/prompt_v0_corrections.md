@@ -26,3 +26,20 @@ Le bloc « Tout chez un seul fournisseur » est faux : `prix.paniers` est la ré
 ## 5. Formulaire `/chantiers/nouveau` — champ « gamme ou produit voulu »
 Sous chaque champ « gamme ou produit voulu » des travaux cochés, remplace le texte d'aide par :
 « La gamme (entrée, milieu, haut de gamme) ou un produit précis — pas la couleur : Marcel te la demande juste après. Laisse vide si tu veux qu'il te pose la question. »
+
+## 6. Bouton « Retour » sur chaque écran du parcours
+Ajoute en haut à gauche de ces écrans un lien discret « ← Retour » (icône flèche, couleur du texte secondaire) :
+- `/chantiers/nouveau` → retour à `/chantiers` ;
+- `/chantiers/[id]/questions` → « ← Modifier la fiche » : revient à `/chantiers/nouveau` avec la fiche déjà remplie (voir point 7) ;
+- `/chantiers/[id]/en-cours` → retour à `/chantiers` (les agents continuent de travailler, rien n'est annulé) ;
+- `/chantiers/[id]` (résultat) → retour à `/chantiers`.
+Utilise une navigation normale (`router.push` / `<Link>`), pas `replace`, pour que le bouton « précédent » du navigateur marche aussi.
+
+## 7. Ne plus perdre ce qui a été tapé (brouillon automatique)
+- Formulaire `/chantiers/nouveau` : enregistre automatiquement tout ce qui est saisi (champs, travaux cochés, portes/fenêtres, meubles, photos, plan) dans le navigateur à chaque modification (avec un petit délai, ~500 ms) et recharge-le à l'ouverture de la page.
+  Les champs texte et nombres vont dans `localStorage` (clé `marcel_brouillon_fiche`) ; les images (déjà réduites) vont dans IndexedDB (API native du navigateur, pas de bibliothèque), car `localStorage` est trop petit pour elles.
+  Entoure chaque lecture/écriture d'un try/catch : si le stockage est indisponible, le formulaire marche comme avant.
+- Affiche au-dessus du formulaire, quand un brouillon a été rechargé : « Brouillon retrouvé » et un lien « Tout effacer » qui vide le formulaire et le brouillon.
+- Le brouillon est gardé quand on passe aux questions (pour pouvoir revenir le modifier) et n'est effacé qu'une fois le chantier lancé (après la réponse réussie de `envoyerReponses`).
+- Écran des questions : garde aussi les réponses en cours dans `localStorage` (clé `marcel_reponses_<id du chantier>`), rechargées si on revient sur la page.
+- Revenir modifier la fiche puis la renvoyer crée un nouveau chantier : c'est normal (l'ancien n'a lancé aucun agent).

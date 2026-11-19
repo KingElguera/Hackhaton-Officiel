@@ -236,17 +236,52 @@ def depuis_fiche(fiche: dict, choix: Optional[dict] = None, projet_id: Optional[
     ouvertures = []
     nb_portes = int(fiche.get("nb_portes") or 0) + int(fiche.get("nb_portes_a_creer") or 0)        # la pièce APRÈS travaux
     nb_fenetres = int(fiche.get("nb_fenetres") or 0) + int(fiche.get("nb_fenetres_a_creer") or 0)
-    for i, mur in enumerate(["fond", "avant", "droit"][:nb_portes]):
+    # Emplacements lus sur le plan coté (POST /api/plan, confirmés par l'artisan) : on les respecte pour les ouvertures existantes,
+    # et seules les ouvertures à créer sont placées par Marcel.
+    lues = [o for o in fiche.get("ouvertures") or [] if o.get("mur") in longueur and o.get("position_m") is not None]
+    plan_ok = bool(lues) and len(lues) == len(fiche.get("ouvertures") or [])
+    if plan_ok:
+        for o in lues:
+            porte = o.get("type") == "porte"
+            larg = float(o.get("largeur_m") or 0) * 100 or (PORTE_CM[0] if porte else FENETRE_CM[0])
+            haut = float(o.get("hauteur_m") or 0) * 100 or (PORTE_CM[1] if porte else FENETRE_CM[1])
+            ligne = {"type": "porte" if porte else "fenetre", "mur": o["mur"], "position_cm": float(o["position_m"]) * 100,
+                     "largeur_cm": larg, "hauteur_cm": min(haut, H - 10)}
+            if not porte:
+                ligne["allege_cm"] = float(o.get("allege_m") or 0) * 100 or ALLEGE_CM
+            ouvertures.append(ligne)
+        nb_portes = int(fiche.get("nb_portes_a_creer") or 0)
+        nb_fenetres = int(fiche.get("nb_fenetres_a_creer") or 0)
+        deja = len(ouvertures)
+
+    def libre(mur, larg, x):
+        return all(o["mur"] != mur or x + larg + 20 <= o["position_cm"] or x >= o["position_cm"] + o["largeur_cm"] + 20
+                   for o in ouvertures)
+    for i, mur in enumerate(["fond", "avant", "droit", "gauche"][:nb_portes] if plan_ok else ["fond", "avant", "droit"][:nb_portes]):
+        if plan_ok:   # porte à créer : près du coin droit d'un mur, sinon au premier endroit libre
+            x = next((x for x in range(int(longueur[mur] - PORTE_CM[0] - 30), 29, -10) if libre(mur, PORTE_CM[0], x)), None)
+            if x is not None:
+                ouvertures.append({"type": "porte", "mur": mur, "position_cm": float(x), "largeur_cm": PORTE_CM[0],
+                                   "hauteur_cm": min(PORTE_CM[1], H - 10)})
+            continue
         if longueur[mur] >= PORTE_CM[0] + 60:   # une porte près du coin droit du mur
             ouvertures.append({"type": "porte", "mur": mur, "position_cm": longueur[mur] - PORTE_CM[0] - 30,
                                "largeur_cm": PORTE_CM[0], "hauteur_cm": min(PORTE_CM[1], H - 10)})
     for i, mur in enumerate(["gauche", "droit", "fond", "avant"][:nb_fenetres]):
+        if plan_ok:   # fenêtre à créer : au premier endroit libre du mur
+            x = next((x for x in range(40, int(longueur[mur] - FENETRE_CM[0] - 39), 10) if libre(mur, FENETRE_CM[0], x)), None)
+            if x is not None and H >= ALLEGE_CM + FENETRE_CM[1] + 10:
+                ouvertures.append({"type": "fenetre", "mur": mur, "position_cm": float(x), "largeur_cm": FENETRE_CM[0],
+                                   "hauteur_cm": FENETRE_CM[1], "allege_cm": ALLEGE_CM})
+            continue
         libre = longueur[mur] - (PORTE_CM[0] + 60 if any(o["mur"] == mur for o in ouvertures) else 0)
         if libre >= FENETRE_CM[0] + 40 and H >= ALLEGE_CM + FENETRE_CM[1] + 10:   # une fenêtre centrée sur la partie libre du mur
             ouvertures.append({"type": "fenetre", "mur": mur, "position_cm": round((libre - FENETRE_CM[0]) / 2),
                                "largeur_cm": FENETRE_CM[0], "hauteur_cm": FENETRE_CM[1], "allege_cm": ALLEGE_CM})
-    demandees = nb_portes + nb_fenetres
-    if demandees:
+    demandees = nb_portes + nb_fenetres + (deja if plan_ok else 0)
+    if plan_ok and (nb_portes or nb_fenetres):
+        alertes.append("portes et fenêtres existantes placées d'après le plan ; celles à créer, placées par Marcel")
+    elif demandees and not plan_ok:
         alertes.append("emplacement des portes et des fenêtres estimé : la fiche donne leur nombre, pas leur position")
     if len(ouvertures) < demandees:
         alertes.append(f"{demandees - len(ouvertures)} ouverture(s) non affichée(s) : pas assez de place sur les murs")

@@ -105,6 +105,8 @@ def generer_questions(f: dict) -> list:
             if gamme and qid in ("gamme_murs", "gamme_plafond", "revetement_sol", "plinthes", "eclairage") \
                     and not (qid == "revetement_sol" and _juste_une_gamme(gamme)):
                 continue  # l'artisan a déjà donné la gamme ou le produit pour ce poste
+            if qid in ("teinte_murs", "teinte_sol") and str(f.get(qid) or "").strip():
+                continue  # couleur déjà donnée dans la fiche (dictée)
             q = {"id": qid, "bloc": bloc, "poste": poste, "question": texte, "delegable": True,
                  "type_reponse": "choix" if options else "texte"}
             if options:
@@ -130,6 +132,9 @@ def appliquer_reponses(f: dict, questions: list, reponses: list):
             choix[q["id"]] = valeur
             delegues.append({"id": q["id"], "sujet": q["question"].rstrip(" ?."), "valeur": valeur, "raison": raison,
                              "change_le_prix": q["bloc"] == "choix_technique"})
+    for qid in ("teinte_murs", "teinte_sol"):  # couleur dictée ou saisie dans la fiche = choix de l'artisan
+        if str(f.get(qid) or "").strip():
+            choix.setdefault(qid, str(f[qid]).strip())
     for p in f.get("postes") or []:  # gamme saisie dans la fiche = choix de l'artisan
         g = (p.get("gamme_ou_produit") or "").strip()
         if g and p["poste"] == "sol" and _juste_une_gamme(g):

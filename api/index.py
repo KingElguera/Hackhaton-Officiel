@@ -227,12 +227,17 @@ def _maj(cid: str, valeurs: dict) -> dict:
 
 
 @app.get("/api/chantiers")
-def lister_chantiers():
+def lister_chantiers(email: Optional[str] = Query(None, description="e-mail de l'artisan connecté : seuls ses chantiers")):
     if not base.actif():
         raise HTTPException(503, "Supabase n'est pas configuré sur le back")
+    params = {"select": "id,nom,created_at,statut,fiche", "fiche": "not.is.null", "order": "created_at.desc", "limit": 50}
+    if email is not None:
+        e = email.strip()
+        if not e or any(c in e for c in "*%,()"):
+            return []
+        params["email_artisan"] = "ilike." + e   # même e-mail, sans tenir compte des majuscules
     with base._client() as c:
-        r = c.get("/projets", params={"select": "id,nom,created_at,statut,fiche", "fiche": "not.is.null",
-                                      "order": "created_at.desc", "limit": 50})
+        r = c.get("/projets", params=params)
         r.raise_for_status()
     return [{"id": p["id"], "nom": p.get("nom") or "Chantier", "piece": (p.get("fiche") or {}).get("piece"),
              "cree_le": p["created_at"], "etat": ch.ETAT_FRONT.get(p.get("statut"), "brouillon")} for p in r.json()]

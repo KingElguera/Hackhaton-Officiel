@@ -39,5 +39,8 @@ Clés dans les variables d'environnement, **jamais dans le repo** : `HAI_API_KEY
 ## Logo
 Le logo (un raton laveur) et ses trois animations de chargement sont dans **[assets/logo/](assets/logo/README.md)**, en SVG, prêts pour le site.
 
+## Logo
+Le logo (un raton laveur) et ses trois animations de chargement sont dans **[assets/logo/](assets/logo/README.md)**, en SVG, prêts pour le site.
+
 ## Résultats et retours sur l'API
 Voir **[RETOURS.md](RETOURS.md)** : accès des enseignes, parcours complet, Hugging Face, comparatif 3D, insertion photo, retours sur l'Agent API.

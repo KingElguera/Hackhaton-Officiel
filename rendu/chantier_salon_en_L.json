@@ -1,0 +1,21 @@
+{
+ "hauteur": 2.6,
+ "contour": [[0, 0], [7, 0], [7, 3], [3.5, 3], [3.5, 5], [0, 5]],
+ "murs_noms": ["F", "E", "D", "C", "B", "A"],
+ "peinture": "#F7F5EF", "plinthe": "#F4F1EA",
+ "peinture_murs": {"E": "#C4673F"},
+ "papier_peint": {"D": {"image": "motifs/feuillage.jpg", "largeur_m": 0.8}},
+ "sol": ["#C8A070", "#B08552"], "sol_pose": "chevron",
+ "ouvertures": [
+  {"type": "porte", "mur": "F", "position": 0.4, "largeur": 0.83, "hauteur": 2.04},
+  {"type": "fenetre", "mur": "A", "position": 1.9, "largeur": 1.2, "hauteur": 1.35, "allege": 0.9},
+  {"type": "fenetre", "mur": "B", "position": 1.15, "largeur": 1.2, "hauteur": 1.35, "allege": 0.9}
+ ],
+ "meubles": [
+  {"nom": "canapé", "mur": "D", "taille": [2.2, 0.95, 0.85], "couleur": "#D9CDB8"},
+  {"nom": "bibliothèque", "mur": "C", "taille": [0.8, 0.3, 2.0], "couleur": "#C8A070"},
+  {"nom": "table basse", "taille": [0.9, 0.9, 0.4], "pos": [5.25, 1.4], "couleur": "#C8A070"}
+ ],
+ "qualite": "rapide",
+ "vues": ["photo1", "photo2", "dessus", "maquette"]
+}

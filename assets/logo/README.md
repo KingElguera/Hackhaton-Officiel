@@ -6,7 +6,7 @@ Tout est en SVG : net à toutes les tailles, sans bibliothèque à installer.
 | Fichier | Usage |
 |---|---|
 | `marcel-tete.svg` | le logo, sur fond clair |
-| `marcel-tete-clair.svg` | le logo, sur fond bleu nuit `#1F2A44` |
+| `marcel-tete-clair.svg` | le logo, sur fond espresso `#2A1D17` |
 | `marcel-tete-une-couleur.svg` | version noire, pour un devis ou un tampon |
 | `favicon.svg` | l'icône de l'onglet |
 | `marcel-reflechit.svg` | animation : Marcel lit la fiche et les photos |
@@ -25,8 +25,8 @@ Dans un projet Next.js, copier ces fichiers dans `public/logo/`.
 
 - Le nom « Marcel Pro » s'écrit en texte à côté de la tête, en police Fredoka.
 - Les animations tournent en boucle (2,6 à 3 s) et restent sur une pose fixe si l'appareil demande moins d'animations.
-- Couleurs : bleu nuit `#1F2A44`, crème `#FBF6EE`, orange brique `#B8501C`.
-- Le museau est ouvert vers le bas : sur un fond qui n'est ni crème ni bleu nuit, il faut adapter la couleur de réserve.
+- Couleurs : espresso `#2A1D17`, nuage `#F4F1EC`, brique `#B4532A`.
+- Le museau est fermé : le logo se pose sur n'importe quel fond.
 
 ## Quelle image à quel moment
 

@@ -136,8 +136,25 @@ def produits(f: dict, choix: dict) -> list:
 
     if "murs" in postes and s["murs_m2"]:
         couches = int(choix.get("couches_murs", "2"))
-        ajouter(f"Peinture murs intérieurs {choix.get('teinte_murs', 'blanc')} mat, {choix.get('gamme_murs', 'milieu de gamme')}",
-                s["murs_m2"] * couches / RENDEMENT_L_M2, "L", f"{s['murs_m2']} m² × {couches} couches")
+        gamme = choix.get("gamme_murs", "milieu de gamme")
+        teinte = choix.get("teinte_murs", "blanc")
+        from .rendus import lire_peinture   # la même lecture que le rendu 3D : prix et maquette restent d'accord
+        base, accents, _ = lire_peinture(str(teinte))
+        if accents:  # « blanc cassé sur 3 murs, vert sauge sur le mur gauche » : un pot par couleur, chacun sa surface
+            L, l = float(f["longueur_m"]), float(f["largeur_m"])
+            cote = {"fond": L, "avant": L, "gauche": l, "droit": l}
+            part = {}
+            for mur, t in accents.items():
+                part[t] = part.get(t, 0) + cote[mur] / (2 * (L + l))
+            part_base = max(1 - sum(part.values()), 0)
+            for t, k in ([(base, part_base)] if part_base else []) + list(part.items()):
+                m2 = round(s["murs_m2"] * k, 2)
+                murs_txt = " + ".join("mur " + m for m, x in accents.items() if x == t) if t != base or not part_base else "autres murs"
+                ajouter(f"Peinture murs intérieurs {t} mat, {gamme}", m2 * couches / RENDEMENT_L_M2, "L",
+                        f"{murs_txt} : ≈ {m2} m² × {couches} couches")
+        else:
+            ajouter(f"Peinture murs intérieurs {teinte} mat, {gamme}",
+                    s["murs_m2"] * couches / RENDEMENT_L_M2, "L", f"{s['murs_m2']} m² × {couches} couches")
         if prepa:
             ajouter("Sous-couche murs intérieurs", s["murs_m2"] / RENDEMENT_L_M2, "L")
             ajouter("Enduit de rebouchage prêt à l'emploi", 1, "pieces")

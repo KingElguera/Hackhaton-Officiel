@@ -212,6 +212,20 @@ def depuis_fiche(fiche: dict, choix: Optional[dict] = None, projet_id: Optional[
     teintes = next((t for mots, t in SOLS if any(m in teinte_sol for m in mots)), ["#B98A5A", "#8E6238"])
     longueur = {"fond": L, "avant": L, "gauche": l, "droit": l}
     ouvertures = []
+    lues = [o for o in fiche.get("ouvertures") or [] if o.get("mur") in longueur and o.get("position_m") is not None]
+    if lues and len(lues) == len(fiche.get("ouvertures") or []):   # emplacements lus sur le plan et confirmés : on les respecte
+        for o in lues:
+            porte = o.get("type") == "porte"
+            larg = float(o.get("largeur_m") or 0) * 100 or (PORTE_CM[0] if porte else FENETRE_CM[0])
+            haut = float(o.get("hauteur_m") or 0) * 100 or (PORTE_CM[1] if porte else FENETRE_CM[1])
+            ligne = {"type": "porte" if porte else "fenetre", "mur": o["mur"], "position_cm": float(o["position_m"]) * 100,
+                     "largeur_cm": larg, "hauteur_cm": min(haut, H - 10)}
+            if not porte:
+                ligne["allege_cm"] = float(o.get("allege_m") or 0) * 100 or ALLEGE_CM
+            ouvertures.append(ligne)
+        d = DemandeRendu(projet_id=projet_id, piece={"largeur_cm": L, "profondeur_cm": l, "hauteur_cm": H}, peinture=peinture,
+                         sol={"teintes": teintes}, ouvertures=ouvertures)
+        return d, alertes
     for i, mur in enumerate(["fond", "avant", "droit"][:int(fiche.get("nb_portes") or 0)]):
         if longueur[mur] >= PORTE_CM[0] + 60:   # une porte près du coin droit du mur
             ouvertures.append({"type": "porte", "mur": mur, "position_cm": longueur[mur] - PORTE_CM[0] - 30,

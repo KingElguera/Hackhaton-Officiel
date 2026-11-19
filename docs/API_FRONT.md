@@ -208,3 +208,14 @@ Le site lit ensuite `resultat.visuel` dans `GET /api/chantiers/<id>/resultat` :
 
 Pour relancer un rendu à la main : `POST /api/chantiers/<id>/rendu` (sans corps).
 Il faut que la table `rendus` existe (`supabase/rendus.sql`) et qu'un atelier tourne (`./demarrer.sh atelier`).
+
+## Lire les cotes sur la photo du plan
+
+`POST /api/plan` avec `{"plan": "data:image/jpeg;base64,..."}` (photo du plan coté, 1600 px maximum). Réponse en 2 à 5 secondes :
+
+- `longueur_m`, `largeur_m`, `hauteur_m`, `surface_m2`, `nb_portes`, `nb_fenetres` : à mettre dans les champs du formulaire ;
+- `ouvertures` : chaque porte et fenêtre avec sa taille et son emplacement. À renvoyer telle quelle dans la fiche (`fiche.ouvertures`) : le rendu 3D place alors les ouvertures au bon endroit au lieu de les estimer ;
+- `cotes_lues` : ce que Marcel a lu, à montrer à l'artisan ;
+- `alertes` : cote illisible, surface incohérente, hauteur absente…
+
+Rien n'est enregistré par cet appel. Le site pré-remplit les champs, l'artisan vérifie et valide : les chiffres restent les siens.

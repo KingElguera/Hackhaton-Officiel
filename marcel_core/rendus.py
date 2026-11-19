@@ -234,23 +234,96 @@ def depuis_fiche(fiche: dict, choix: Optional[dict] = None, projet_id: Optional[
                 alertes.append(f"teinte de sol « {choix['teinte_sol']} » inconnue : parquet chêne par défaut")
     longueur = {"fond": L, "avant": L, "gauche": l, "droit": l}
     ouvertures = []
-    for i, mur in enumerate(["fond", "avant", "droit"][:int(fiche.get("nb_portes") or 0)]):
+    nb_portes = int(fiche.get("nb_portes") or 0) + int(fiche.get("nb_portes_a_creer") or 0)        # la pièce APRÈS travaux
+    nb_fenetres = int(fiche.get("nb_fenetres") or 0) + int(fiche.get("nb_fenetres_a_creer") or 0)
+    for i, mur in enumerate(["fond", "avant", "droit"][:nb_portes]):
         if longueur[mur] >= PORTE_CM[0] + 60:   # une porte près du coin droit du mur
             ouvertures.append({"type": "porte", "mur": mur, "position_cm": longueur[mur] - PORTE_CM[0] - 30,
                                "largeur_cm": PORTE_CM[0], "hauteur_cm": min(PORTE_CM[1], H - 10)})
-    for i, mur in enumerate(["gauche", "droit", "fond", "avant"][:int(fiche.get("nb_fenetres") or 0)]):
+    for i, mur in enumerate(["gauche", "droit", "fond", "avant"][:nb_fenetres]):
         libre = longueur[mur] - (PORTE_CM[0] + 60 if any(o["mur"] == mur for o in ouvertures) else 0)
         if libre >= FENETRE_CM[0] + 40 and H >= ALLEGE_CM + FENETRE_CM[1] + 10:   # une fenêtre centrée sur la partie libre du mur
             ouvertures.append({"type": "fenetre", "mur": mur, "position_cm": round((libre - FENETRE_CM[0]) / 2),
                                "largeur_cm": FENETRE_CM[0], "hauteur_cm": FENETRE_CM[1], "allege_cm": ALLEGE_CM})
-    demandees = int(fiche.get("nb_portes") or 0) + int(fiche.get("nb_fenetres") or 0)
+    demandees = nb_portes + nb_fenetres
     if demandees:
         alertes.append("emplacement des portes et des fenêtres estimé : la fiche donne leur nombre, pas leur position")
     if len(ouvertures) < demandees:
         alertes.append(f"{demandees - len(ouvertures)} ouverture(s) non affichée(s) : pas assez de place sur les murs")
+    meubles = placer_meubles(fiche.get("meubles") or [], longueur, ouvertures, alertes)
     d = DemandeRendu(projet_id=projet_id, piece={"largeur_cm": L, "profondeur_cm": l, "hauteur_cm": H}, peinture=peinture,
-                     sol={"teintes": teintes}, ouvertures=ouvertures)
+                     sol={"teintes": teintes}, ouvertures=ouvertures, meubles=meubles)
     return d, alertes
+
+
+def placer_meubles(liste: list, longueur: dict, ouvertures: list, alertes: list) -> List[MeubleRendu]:
+    """Range les meubles de la fiche contre les murs, sans boucher une porte ni une fenêtre et sans se chevaucher.
+
+    Chaque meuble : {photo, nom, largeur_cm (obligatoire), profondeur_cm, hauteur_cm, mur (facultatif)}.
+    Sans mur imposé, Marcel choisit le mur qui a le plus de place libre.
+    """
+    marge = 10
+    # (début, fin, hauteur libre en dessous) : sous une fenêtre, un meuble bas passe (lit, commode basse)
+    occupe = {m: [(o["position_cm"] - marge, o["position_cm"] + o["largeur_cm"] + marge, (o.get("allege_cm") or 0) - 5)
+                  for o in ouvertures if o["mur"] == m] for m in longueur}
+
+    def place_libre(mur, larg, haut=None):
+        """Premier espace libre assez large ; le meuble y est centré."""
+        genes = [(a, b) for a, b, dessous in occupe[mur] if not (haut and haut <= dessous)]
+        x = marge
+        for a, b in sorted(genes) + [(longueur[mur] - marge, longueur[mur])]:
+            if a - x >= larg:
+                return x + (a - x - larg) / 2
+            x = max(x, b)
+        return None
+
+    def libre_total(mur):
+        return longueur[mur] - sum(b - a for a, b, _ in occupe[mur])
+
+    out = []
+    for i, m in enumerate(liste[:6]):
+        nom = (m.get("nom") or f"meuble {i + 1}").strip()
+        try:
+            larg = float(m.get("largeur_cm") or 0)
+        except (TypeError, ValueError):
+            larg = 0
+        if larg <= 0:
+            alertes.append(f"{nom} : largeur non renseignée — meuble non affiché")
+            continue
+        if not m.get("photo") and not (m.get("profondeur_cm") and m.get("hauteur_cm")):
+            alertes.append(f"{nom} : ni photo ni profondeur/hauteur — meuble non affiché")
+            continue
+        def nombre(k):
+            try:
+                return float(m[k]) if m.get(k) else None
+            except (TypeError, ValueError):
+                return None
+        voulu = m.get("mur") if m.get("mur") in longueur else None
+        murs = [voulu] if voulu else sorted(longueur, key=lambda w: (-libre_total(w), w))
+        for mur in murs:
+            x = place_libre(mur, larg, nombre("hauteur_cm"))
+            if x is not None:
+                break
+        else:
+            alertes.append(f"{nom} : pas assez de place libre sur {'le mur ' + voulu if voulu else 'les murs'} — non affiché")
+            continue
+        occupe[mur].append((x, x + larg, 0))
+        out.append(MeubleRendu(nom=nom, photo=m.get("photo"), largeur_cm=larg, profondeur_cm=nombre("profondeur_cm"),
+                               hauteur_cm=nombre("hauteur_cm"), mur=mur, position_cm=x))
+    if out:
+        alertes.append("meubles placés par Marcel le long des murs libres : leur emplacement est indicatif")
+    return out
+
+
+def deposer_photo(source: str, chemin: str) -> str:
+    """Range une photo envoyée par le site (data URL) dans le stockage et renvoie son lien public. Un lien reste un lien."""
+    if not source.startswith("data:"):
+        return source
+    entete, _, donnees = source.partition(",")
+    ext, typ = (".png", "image/png") if "png" in entete else (".jpg", "image/jpeg")
+    _appel("POST", f"/storage/v1/object/rendus/{urllib.parse.quote(chemin + ext)}", base64.b64decode(donnees), brut=True,
+           entetes={"Content-Type": typ, "x-upsert": "true"})
+    return f"{_config()[0]}/storage/v1/object/public/rendus/{urllib.parse.quote(chemin + ext)}"
 
 
 def demander_pour_projet(projet: dict, choix: Optional[dict] = None):
@@ -278,8 +351,8 @@ def noter_visuel(projet_id: str, rendu_id: str, etat: str, images: Optional[list
     visuel.update(rendu_id=rendu_id, etat=etat, images=images or [], apres_url=urls.get("photo1.png") or visuel.get("apres_url"),
                   panorama_url=urls.get("panorama_360.jpg"), dessus_url=urls.get("dessus.png"),
                   maquette_url=urls.get("maquette.glb"))
-    if alertes is not None:
-        visuel["alertes"] = alertes
+    if alertes is not None:  # celles de la préparation (meubles, ouvertures estimées) + celles du rendu, sans doublon
+        visuel["alertes"] = list(dict.fromkeys((visuel.get("alertes_demande") or []) + list(alertes)))
     resultat["visuel"] = visuel
     _appel("PATCH", "/rest/v1/projets", {"resultat": resultat}, params={"id": "eq." + projet_id})
 

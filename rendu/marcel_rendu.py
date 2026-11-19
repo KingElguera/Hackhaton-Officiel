@@ -170,6 +170,7 @@ def boite_englobante(objs):
 
 ANGLE = {"fond": 0.0, "avant": math.pi, "gauche": math.pi / 2, "droit": -math.pi / 2}
 meubles_poses = []
+emprises = []   # empreinte au sol de chaque meuble (x0, y0, x1, y1) : la caméra s'en écarte
 for i, f in enumerate(cfg.get("meubles", [])):
     if "modele" in f:
         # Un objet 3D (fichier GLB, par exemple produit par TRELLIS) : on le met à l'échelle,
@@ -193,6 +194,7 @@ for i, f in enumerate(cfg.get("meubles", [])):
         # "hauteur_pose_m" : pour un élément accroché au mur (étagère murale), sinon posé au sol.
         pivot.location = Vector((cible.x - centre.x, cible.y - centre.y, -lo.z + float(f.get("hauteur_pose_m", 0)))) + pivot.location
         lo, hi = boite_englobante(nouveaux)
+        emprises.append((lo.x, lo.y, hi.x, hi.y, hi.z))
         meubles_poses.append({"nom": f.get("nom", f["modele"]), "largeur_m": round(larg, 3), "profondeur_m": round(prof, 3), "hauteur_m": round(hi.z - lo.z, 3)})
     elif "mur" in f:
         # Pas de modèle, mais un mur : un volume simple (largeur, profondeur, hauteur) posé contre ce mur.
@@ -200,6 +202,8 @@ for i, f in enumerate(cfg.get("meubles", [])):
         c = point_sur_mur(mur, float(f.get("position", (m["longueur"] - larg) / 2)), larg) + m["dedans"] * (E / 2 + 0.02 + prof / 2)
         boite(f.get("nom", "meuble_%d" % i), taille_selon_mur(mur, larg, prof, haut), (c.x, c.y, haut / 2 + float(f.get("hauteur_pose_m", 0))),
               matiere("m_%d" % i, f.get("couleur", "#D8CBB5"), 0.6))
+        tx, ty, _ = taille_selon_mur(mur, larg, prof, haut)
+        emprises.append((c.x - tx / 2, c.y - ty / 2, c.x + tx / 2, c.y + ty / 2, haut + float(f.get("hauteur_pose_m", 0))))
         meubles_poses.append({"nom": f.get("nom", "meuble_%d" % i), "largeur_m": larg, "profondeur_m": prof, "hauteur_m": haut, "volume_simple": True})
     else:
         # Pas de modèle ni de mur : un volume simple placé par ses coordonnées.
@@ -239,16 +243,29 @@ vues = cfg.get("vues", ["photo1", "photo2", "dessus", "panorama", "maquette"])
 res = (1600, 1000, 64) if finale else (1120, 700, 32)
 fichiers = []
 marge = 0.3
-if "photo1" in vues:
-    # Depuis le coin avant droit, vers le coin du fond à gauche.
+
+def degagement(x, y):
+    """Distance au sol entre la caméra et le meuble le plus proche (grande s'il n'y en a pas)."""
+    d = 99.0
+    for x0, y0, x1, y1, z1 in emprises:
+        if z1 < 1.0:   # un meuble bas (lit, table basse) ne bouche pas la vue d'une caméra à 1,50 m
+            continue
+        dx = max(x0 - x, 0, x - x1); dy = max(y0 - y, 0, y - y1)
+        d = min(d, math.hypot(dx, dy))
+    return d
+
+# Les photos sont prises depuis un coin, vers le coin opposé. Par défaut les deux coins côté « avant » ;
+# si un meuble est collé à l'un d'eux, on prend le coin le plus dégagé (sinon le meuble bouche l'image).
+COINS = [(1, -1), (-1, -1), (1, 1), (-1, 1)]   # (signe x, signe y) : avant droit, avant gauche, fond droit, fond gauche
+def score(c):
+    return min(degagement(c[0] * (W / 2 - marge), c[1] * (D / 2 - marge)), 1.2)   # au-delà de 1,2 m, rien ne gêne
+coins = sorted(COINS, key=lambda c: -score(c))   # tri stable : à égalité, l'ordre par défaut est gardé
+for nom_vue, (sx, sy) in zip(["photo1", "photo2"], coins[:2]):
+    if nom_vue not in vues:
+        continue
     cam.type = "PERSP"; cam.lens = 15
-    viser((W / 2 - marge, -D / 2 + marge, 1.5), (-W / 2 + 0.9, D / 2 - 0.5, 1.05))
-    fichiers.append(rendre("photo1.png", *res))
-if "photo2" in vues:
-    # Depuis le coin avant gauche, vers le coin du fond à droite.
-    cam.type = "PERSP"; cam.lens = 15
-    viser((-W / 2 + marge, -D / 2 + marge, 1.5), (W / 2 - 0.9, D / 2 - 0.5, 1.05))
-    fichiers.append(rendre("photo2.png", *res))
+    viser((sx * (W / 2 - marge), sy * (D / 2 - marge), 1.5), (-sx * (W / 2 - 0.9), -sy * (D / 2 - 0.5), 1.05))
+    fichiers.append(rendre(nom_vue + ".png", *res))
 if "dessus" in vues:
     # Vue de dessus, sans plafond, pour montrer le calepinage du sol.
     plafond.hide_render = True

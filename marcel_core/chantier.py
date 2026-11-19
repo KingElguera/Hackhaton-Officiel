@@ -31,9 +31,20 @@ def maintenant() -> str:
 
 
 # ---------------------------------------------------------------- 1. surfaces (le code mesure)
+def a_creer(f: dict):
+    """Portes et fenêtres que l'artisan veut créer (en plus de celles qui existent déjà)."""
+    return int(f.get("nb_portes_a_creer") or 0), int(f.get("nb_fenetres_a_creer") or 0)
+
+
+def ouvertures_finales(f: dict):
+    """Portes et fenêtres de la pièce APRÈS travaux : celles qui existent + celles à créer."""
+    pc, fc = a_creer(f)
+    return int(f.get("nb_portes") or 0) + pc, int(f.get("nb_fenetres") or 0) + fc
+
+
 def surfaces(f: dict) -> dict:
     L, l, H = float(f["longueur_m"]), float(f["largeur_m"]), float(f.get("hauteur_m") or 0)
-    portes, fenetres = int(f.get("nb_portes") or 0), int(f.get("nb_fenetres") or 0)
+    portes, fenetres = ouvertures_finales(f)
     perimetre = 2 * (L + l)
     murs = max(perimetre * H - portes * PORTE_M2 - fenetres * FENETRE_M2, 0) if H else None
     return {"perimetre_m": round(perimetre, 2), "murs_m2": round(murs, 2) if murs is not None else None,
@@ -172,6 +183,13 @@ def produits(f: dict, choix: dict) -> list:
             ajouter("Sous-couche acoustique pour parquet", s["sol_m2"] * 1.05, "m2")
     if "plinthes" in postes:
         ajouter(f"Plinthes {choix.get('plinthes', 'MDF à peindre')}", s["plinthes_m"] * 1.10, "m", f"{s['plinthes_m']} m + 10 %")
+    pc, fc = a_creer(f)
+    if pc:
+        ajouter("Bloc-porte intérieur prêt à poser 83 x 204 cm", pc, "pieces", f"{pc} porte(s) à créer")
+    if fc:
+        ajouter("Fenêtre PVC 2 vantaux 120 x 135 cm", fc, "pieces", f"{fc} fenêtre(s) à créer")
+    if pc or fc:
+        ajouter("Mousse polyuréthane de calfeutrement", math.ceil((pc + fc) / 2), "pieces", "≈ 1 bombe pour 2 ouvertures")
     if "eclairage" in postes:
         ajouter(f"{choix.get('eclairage', 'Plafonnier')} {choix.get('style_eclairage', '')}".strip(), 1, "pieces")
     if postes & {"murs", "plafond"}:
@@ -200,6 +218,10 @@ def planning(f: dict, choix: dict, synth: dict) -> list:
     debut = max(date.fromisoformat(souhait) if souhait else date.today(), date.today() + timedelta(days=delai_max + 1))
     commander_avant = (debut - timedelta(days=delai_max + 1)).isoformat()
     taches = []
+    pc, fc = a_creer(f)
+    if pc or fc:  # les ouvertures d'abord : la poussière et les reprises avant la peinture
+        quoi = " et ".join(x for x in (f"{pc} porte(s)" if pc else "", f"{fc} fenêtre(s)" if fc else "") if x)
+        taches.append((f"Créer les ouvertures et poser {quoi}", max(1, math.ceil((pc + fc) / 2))))
     if f.get("etat_murs") in ("a_reprendre", "abime") and "murs" in postes:
         taches.append(("Reboucher et poncer les murs, sous-couche", 1))
     if "plafond" in postes:
@@ -235,6 +257,11 @@ def heures_estimees(f: dict, choix: dict) -> list:
         h.append(("Main-d'œuvre : pose des plinthes", s["plinthes_m"] * 0.15))
     if "eclairage" in postes:
         h.append(("Main-d'œuvre : installation du luminaire", 1))
+    pc, fc = a_creer(f)
+    if pc:
+        h.append((f"Main-d'œuvre : pose de {pc} bloc(s)-porte (ouverture prête)", 3 * pc))
+    if fc:
+        h.append((f"Main-d'œuvre : pose de {fc} fenêtre(s) (ouverture prête)", 4 * fc))
     return [(t, round(max(x, 0.5) * 2) / 2) for t, x in h]  # arrondi à la demi-heure
 
 
@@ -270,6 +297,12 @@ def totaux(d: dict) -> dict:
 # ---------------------------------------------------------------- 6. conseils (3 au maximum, ne bloquent jamais)
 def conseils(f: dict, choix: dict, synth: dict, d: dict) -> list:
     c = []
+    pc, fc = a_creer(f)
+    if pc or fc:
+        c.append({"id": "ouvertures", "texte": "Création d'ouverture : vérifie que le mur n'est pas porteur.",
+                  "explication": "Le devis chiffre les portes/fenêtres et leur pose, pas le percement du mur ni un linteau "
+                                 "(mur porteur : étude obligatoire)." + (" Une nouvelle fenêtre modifie la façade : "
+                                 "déclaration préalable en mairie." if fc else "")})
     budget = f.get("budget_client_eur")
     if budget:
         ttc = totaux(d)["total_ttc"]

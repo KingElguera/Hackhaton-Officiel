@@ -13,6 +13,7 @@ Sans état : le front garde le `projet` et les `sessions` et les renvoie à chaq
 """
 import os
 import sys
+import uuid
 from pathlib import Path
 from typing import List, Optional
 
@@ -242,6 +243,21 @@ def creer_chantier(d: DemandeChantier):
         if not f.get(k):
             raise HTTPException(400, f"{k} manquant : les dimensions ne peuvent pas être déléguées")
     photos, plan = f.pop("photos", []) or [], f.pop("plan", None)
+    # Meubles : [{photo, nom, largeur_cm, profondeur_cm, hauteur_cm, mur}] (dans « meubles » ou « photos_meubles »).
+    meubles = f.get("meubles") or []
+    if not meubles and isinstance(f.get("photos_meubles"), list):
+        meubles = [m for m in f["photos_meubles"] if isinstance(m, dict)]
+    if meubles:
+        from marcel_core import rendus
+        lot = uuid.uuid4().hex[:12]
+        for i, m in enumerate(meubles[:6]):
+            if isinstance(m, dict) and m.get("photo"):
+                try:  # la photo part dans le stockage : la fiche garde un lien, pas l'image
+                    m["photo"] = rendus.deposer_photo(m["photo"], f"meubles/{lot}_{i + 1}")
+                except Exception as e:
+                    m.pop("photo", None)
+                    m["erreur_photo"] = f"{type(e).__name__}: {e}"[:120]
+        f["meubles"] = [m for m in meubles[:6] if isinstance(m, dict)]
     for k in ("photos_inspiration", "photos_meubles"):  # le front peut envoyer la liste ou seulement le nombre
         v = f.get(k)
         f[k] = v if isinstance(v, int) else len(v or [])
@@ -313,7 +329,7 @@ def _finaliser(p: dict) -> dict:
     try:  # le visuel est demandé à l'atelier (TRELLIS + Blender) ; il arrive quelques minutes après, sans rien bloquer
         from marcel_core import rendus
         ligne, alertes = rendus.demander_pour_projet({**p, "fiche": fiche}, choix)
-        resultat["visuel"].update(rendu_id=ligne["id"], etat="a_faire", alertes=alertes)
+        resultat["visuel"].update(rendu_id=ligne["id"], etat="a_faire", alertes=alertes, alertes_demande=alertes)
     except Exception as e:
         print(f"rendu non demandé : {type(e).__name__}: {e}", flush=True)
     return _maj(p["id"], {"resultat": resultat, "devis": dv, "total_eur": ch.totaux(dv)["total_ttc"],

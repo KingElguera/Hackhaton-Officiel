@@ -1,0 +1,6 @@
+{"piece": {"largeur_cm": 420, "profondeur_cm": 310, "hauteur_cm": 250},
+ "peinture": "Blanc cassé mat", "peinture_par_mur": {"gauche": "vert sauge velours"}, "plafond": "blanc",
+ "sol": {"teintes": ["#C9A77A", "#B8935F"]},
+ "ouvertures": [{"type": "fenetre", "mur": "fond", "position_cm": 150, "largeur_cm": 120, "hauteur_cm": 135, "allege_cm": 90},
+                {"type": "porte", "mur": "avant", "position_cm": 307, "largeur_cm": 83, "hauteur_cm": 204}],
+ "vues": ["photo1"], "qualite": "rapide"}

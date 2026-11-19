@@ -85,7 +85,8 @@ def taille_selon_mur(mur, le_long, travers, haut):
 
 peinture = matiere("peinture", cfg.get("peinture", "#F4F1EA"), 0.85)
 blanc = matiere("blanc", cfg.get("plinthe", "#F4F1EA"), 0.5)
-plafond_m = matiere("plafond", "#FFFFFF", 0.9)
+plafond_m = matiere("plafond", cfg.get("plafond", "#FFFFFF"), 0.9)
+peintures = {m: matiere("peinture_" + m, hx, 0.85) for m, hx in (cfg.get("peintures") or {}).items()}   # murs d'accent
 
 sol_m = bpy.data.materials.new("sol"); sol_m.use_nodes = True
 nt = sol_m.node_tree; b = bsdf(sol_m); b.inputs["Roughness"].default_value = 0.45
@@ -112,7 +113,7 @@ plafond = boite("plafond", (W + 2 * E, D + 2 * E, 0.05), (0, 0, H + 0.025), plaf
 murs = {}
 for nom, m in MURS.items():
     long_ = m["longueur"] + (2 * E if nom in ("fond", "avant") else 0)
-    murs[nom] = boite("mur_" + nom, taille_selon_mur(nom, long_, E, H), (m["centre"].x, m["centre"].y, H / 2), peinture)
+    murs[nom] = boite("mur_" + nom, taille_selon_mur(nom, long_, E, H), (m["centre"].x, m["centre"].y, H / 2), peintures.get(nom, peinture))
     c = m["centre"] + m["dedans"] * (E / 2 + 0.0075)
     boite("plinthe_" + nom, taille_selon_mur(nom, m["longueur"], 0.015, 0.08), (c.x, c.y, 0.04), blanc)
 

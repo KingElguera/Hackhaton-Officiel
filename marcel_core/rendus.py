@@ -79,6 +79,8 @@ class DemandeRendu(BaseModel):
     projet_id: Optional[str] = None
     piece: PieceRendu
     peinture: str = Field("blanc", description="nom de teinte courant ou code #RRGGBB")
+    peinture_par_mur: Optional[dict] = Field(None, description="mur d'accent : {\"gauche\": \"vert sauge\"} ; murs : fond, avant, gauche, droit")
+    plafond: str = Field("blanc", description="teinte du plafond")
     sol: SolRendu = Field(default_factory=SolRendu)
     ouvertures: List[OuvertureRendu] = Field(default_factory=list)
     meubles: List[MeubleRendu] = Field(default_factory=list, max_length=6)
@@ -303,12 +305,45 @@ def _fichier_depuis(source: str, dossier: Path, nom: str) -> Path:
     return p
 
 
+TEINTES_EN_PLUS = {"blanc casse": "#EDE4D3", "ecru": "#E9E0CC", "creme": "#F0E6CC", "ivoire": "#F1EBD8", "sable": "#D9C7A3",
+                   "greige": "#CFC6B8", "gris perle": "#CFD2D4", "gris souris": "#9A9A9A", "anthracite": "#4A4D52",
+                   "vert olive": "#7C8250", "vert kaki": "#7A7B55", "vert d'eau": "#B9D8CC", "vert amande": "#C3D4B5",
+                   "vert bouteille": "#2F4F3E", "vert sapin": "#2E4A3B", "bleu clair": "#BBD6EC", "bleu ciel": "#A9CFEF",
+                   "bleu gris": "#8FA3B4", "bleu marine": "#22304A", "bleu petrole": "#255A66", "turquoise": "#4FB3B0",
+                   "jaune moutarde": "#C9A227", "moutarde": "#C9A227", "orange": "#E08A3C", "rouge": "#B23A32",
+                   "bordeaux": "#6E2433", "brique": "#A8553A", "vieux rose": "#C99A98", "violet": "#7A5C99",
+                   "lilas": "#C9B8DD", "aubergine": "#4B2F45", "marron": "#6B4A35", "chocolat": "#4E3527", "caramel": "#B98552"}
+
+
+def _sans_accent(t: str) -> str:
+    import unicodedata
+    return "".join(c for c in unicodedata.normalize("NFD", (t or "").lower()) if unicodedata.category(c) != "Mn").strip()
+
+
 def _teinte(nom: str, alertes: list) -> str:
+    """Nom de teinte écrit librement par l'artisan → code couleur. Jamais d'échec : au pire blanc, avec une alerte."""
+    import re
     n = (nom or "").strip()
-    if n.startswith("#") and len(n) == 7:
+    if re.fullmatch(r"#[0-9a-fA-F]{6}", n):
         return n
-    if n.lower() in TEINTES:
-        return TEINTES[n.lower()]
+    connues = {**{_sans_accent(k): v for k, v in TEINTES.items()}, **TEINTES_EN_PLUS}
+    t = _sans_accent(n)
+    if t in connues:
+        return connues[t]
+    for k in sorted(connues, key=len, reverse=True):   # « vert sauge mat velours » contient « vert sauge »
+        if re.search(r"\b" + re.escape(k) + r"\b", t):
+            return connues[k]
+    if t:
+        try:  # teinte de nuancier ou nom rare : le modèle de texte donne la couleur la plus proche
+            from . import hf
+            r = hf.chat([{"role": "user", "content": f"Teinte de peinture murale : « {n} ». Réponds uniquement par son code "
+                                                     "couleur le plus proche au format #RRGGBB, sans autre texte."}], 20)
+            m = re.search(r"#[0-9a-fA-F]{6}", r["texte"])
+            if m:
+                alertes.append(f"teinte « {n} » : couleur approchée ({m.group(0)}), à confirmer avec le nuancier")
+                return m.group(0)
+        except Exception:
+            pass
     alertes.append(f"teinte « {nom} » inconnue : murs rendus en blanc")
     return TEINTES["blanc"]
 
@@ -323,6 +358,9 @@ def vers_chantier(d: DemandeRendu, dossier: Path, modele_3d: str = "trellis2") -
     alertes, meubles, generations = [], [], []
     chantier = {"largeur": d.piece.largeur_cm / 100, "profondeur": d.piece.profondeur_cm / 100, "hauteur": d.piece.hauteur_cm / 100,
                 "peinture": _teinte(d.peinture, alertes), "plinthe": "#F4F1EA", "qualite": d.qualite, "vues": list(d.vues)}
+    chantier["plafond"] = _teinte(d.plafond, alertes)
+    chantier["peintures"] = {m: _teinte(t, alertes) for m, t in (d.peinture_par_mur or {}).items()
+                             if m in ("fond", "avant", "gauche", "droit") and t}
     if d.sol.image:
         try:
             chantier["sol_image"] = str(_fichier_depuis(d.sol.image, dossier, "sol").resolve())
